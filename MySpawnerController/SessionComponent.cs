@@ -12,6 +12,7 @@ using Sandbox.ModAPI;
 using VRage;
 using VRage.Game;
 using VRage.Game.Components;
+using VRage.Game.ModAPI;
 using VRage.ModAPI;
 using VRage.ObjectBuilders;
 using VRageMath;
@@ -26,7 +27,7 @@ namespace MySpawnerController
         private volatile bool _running;
 
         private readonly ConcurrentQueue<(string BpFile, Vector3D Offset, string Name,
-            HttpListenerContext Ctx, bool IsBatch, StringBuilder BatchLog)> _queue = new();
+            HttpListenerContext Ctx, bool IsBatch, List<GridInfo> Results)> _queue = new();
 
         private static readonly (string Name, Vector3D Offset)[] DefaultGrids =
         {
@@ -40,6 +41,8 @@ namespace MySpawnerController
             "SpaceEngineers", "Blueprints", "local");
 
         private const int Port = 9998;
+
+        // ── Lifecycle ──────────────────────────────────────────────
 
         public override void Init(MyObjectBuilder_SessionComponent sessionComponent)
         {
@@ -63,6 +66,8 @@ namespace MySpawnerController
                 catch (Exception ex) { Logger.Error("ProcessSpawnItem", ex); }
             }
         }
+
+        // ── HTTP server ────────────────────────────────────────────
 
         private void StartHttpListener()
         {
@@ -169,39 +174,51 @@ namespace MySpawnerController
             }
             else
             {
-                var log = new StringBuilder();
+                var results = new List<GridInfo>();
                 foreach (var (gName, offset) in DefaultGrids)
                 {
                     string bpFile = Path.Combine(BlueprintsFolder, gName, "bp.sbc");
                     if (!File.Exists(bpFile))
                     {
-                        log.AppendLine($"  {gName}: MISSING");
+                        results.Add(new GridInfo { DisplayName = gName + " MISSING" });
                         continue;
                     }
-                    _queue.Enqueue((bpFile, offset, gName, ctx, true, log));
+                    _queue.Enqueue((bpFile, offset, gName, ctx, true, results));
                 }
-                _queue.Enqueue((null, default, null, ctx, true, log)); // sentinel
+                _queue.Enqueue((null, default, null, ctx, true, results)); // sentinel
             }
         }
 
+        // ── Main-thread spawn ──────────────────────────────────────
+
         private void ProcessSpawnItem((string BpFile, Vector3D Offset, string Name,
-            HttpListenerContext Ctx, bool IsBatch, StringBuilder BatchLog) item)
+            HttpListenerContext Ctx, bool IsBatch, List<GridInfo> Results) item)
         {
             if (item.BpFile == null && item.IsBatch)
             {
-                Respond(item.Ctx, 200, $"Batch done:\n{item.BatchLog}");
+                Respond(item.Ctx, 200, FormatGridDetails(item.Results));
                 return;
             }
 
-            bool ok = SpawnBlueprint(item.BpFile, item.Offset, item.Name);
+            var result = SpawnBlueprint(item.BpFile, item.Offset, item.Name);
 
             if (item.IsBatch)
-                item.BatchLog.AppendLine(ok ? $"  {item.Name}: OK at {item.Offset}" : $"  {item.Name}: FAILED");
+            {
+                if (result != null)
+                    item.Results.AddRange(result);
+                else
+                    item.Results.Add(new GridInfo { DisplayName = item.Name + " FAILED" });
+            }
             else
-                Respond(item.Ctx, ok ? 200 : 500, ok ? $"Spawned {item.Name} at {item.Offset}" : $"Failed: {item.Name}");
+            {
+                if (result != null && result.Count > 0)
+                    Respond(item.Ctx, 200, FormatGridDetails(result));
+                else
+                    Respond(item.Ctx, 500, $"Failed: {item.Name}");
+            }
         }
 
-        private static bool SpawnBlueprint(string bpFile, Vector3D offset, string blueprintName)
+        private static List<GridInfo> SpawnBlueprint(string bpFile, Vector3D offset, string blueprintName)
         {
             Logger.Info($"Spawning: {blueprintName} @ X:{offset.X} Y:{offset.Y} Z:{offset.Z}");
 
@@ -220,13 +237,13 @@ namespace MySpawnerController
             catch (Exception ex)
             {
                 Logger.Error($"DeserializeXML: {blueprintName}", ex);
-                return false;
+                return null;
             }
 
             if (definitions?.ShipBlueprints == null || definitions.ShipBlueprints.Length == 0)
             {
                 Logger.Error($"No ShipBlueprints in {blueprintName}");
-                return false;
+                return null;
             }
 
             Logger.Info($"  ShipBlueprints.Length={definitions.ShipBlueprints.Length}");
@@ -235,23 +252,23 @@ namespace MySpawnerController
             if (shipBp.CubeGrids == null || shipBp.CubeGrids.Length == 0)
             {
                 Logger.Error($"No CubeGrids in {blueprintName}");
-                return false;
+                return null;
             }
 
-            //maybe should be outside the method.
             var gridBuilders = new List<MyObjectBuilder_CubeGrid>();
             foreach (var grid in shipBp.CubeGrids)
             {
                 if (grid is MyObjectBuilder_CubeGrid cubeGrid)
                     gridBuilders.Add(cubeGrid);
             }
-            if (gridBuilders.Count == 0) return false;
+            if (gridBuilders.Count == 0) return null;
 
             MyAPIGateway.Entities.RemapObjectBuilderCollection(gridBuilders);
 
+            var results = new List<GridInfo>();
+
             foreach (var gb in gridBuilders)
             {
-                // Critical: blueprint SBCs don't set these — without them, grid is phantom
                 gb.CreatePhysics = true;
                 gb.Editable = true;
                 gb.DestructibleBlocks = true;
@@ -268,17 +285,128 @@ namespace MySpawnerController
                 if (ent is MyCubeGrid g)
                 {
                     PostSpawnFixup(g);
+                    results.Add(BuildGridInfo(g));
                     Logger.Info($"  OK: {g.DisplayName} Id={g.EntityId}");
                 }
             }
 
-            return true;
+            return results;
         }
 
-        /// <summary>
-        /// Fix phantom grid: trigger OnAddedToScene + ActivatePhysics + RegisterCubeGrid.
-        /// CreateFromObjectBuilderAndAdd alone gives visual-only grids (no physics, no save).
-        /// </summary>
+        // ── Grid info ──────────────────────────────────────────────
+
+        private sealed class GridInfo
+        {
+            public long EntityId;
+            public string DisplayName;
+            public Vector3D Position;
+            public Vector3 LinearVelocity;
+            public List<BlockInfo> Blocks = new List<BlockInfo>();
+
+            public string ToShortString()
+            {
+                return $"  {DisplayName} Id={EntityId} @ X:{Position.X:F1} Y:{Position.Y:F1} Z:{Position.Z:F1}";
+            }
+        }
+
+        private sealed class BlockInfo
+        {
+            public string Name;
+            public string TypeName;
+            public Vector3I GridPos;
+        }
+
+        private static GridInfo BuildGridInfo(MyCubeGrid grid)
+        {
+            var info = new GridInfo
+            {
+                EntityId = grid.EntityId,
+                DisplayName = grid.DisplayName,
+            };
+
+            // Position
+            try { info.Position = grid.PositionComp.GetPosition(); }
+            catch { }
+
+            // Velocity
+            try
+            {
+                if (grid.Physics != null)
+                    info.LinearVelocity = grid.Physics.LinearVelocity;
+            }
+            catch { }
+
+            // Blocks
+            try
+            {
+                var blocks = new List<IMySlimBlock>();
+                ((IMyCubeGrid)grid).GetBlocks(blocks);
+                Logger.Info($"  GetBlocks returned {blocks.Count} blocks");
+                foreach (var slim in blocks)
+                {
+                    if (slim == null) continue;
+                    var blockInfo = new BlockInfo
+                    {
+                        GridPos = slim.Position,
+                    };
+
+                    if (slim.FatBlock != null)
+                    {
+                        var fat = slim.FatBlock;
+                        blockInfo.Name = fat.DisplayNameText ?? fat.DefinitionDisplayNameText;
+                        try { blockInfo.TypeName = fat.BlockDefinition.ToString(); }
+                        catch { blockInfo.TypeName = fat.GetType().Name; }
+                    }
+                    else
+                    {
+                        var def = slim.BlockDefinition;
+                        blockInfo.Name = def != null ? def.DisplayNameText ?? "Armor" : "Armor";
+                        if (def != null)
+                        {
+                            var id = def.Id;
+                            blockInfo.TypeName = !string.IsNullOrEmpty(id.SubtypeName) ? id.SubtypeName : "CubeBlock";
+                        }
+                        else
+                            blockInfo.TypeName = "CubeBlock";
+                    }
+
+                    info.Blocks.Add(blockInfo);
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.Warn($"  BuildGridInfo blocks: {ex.Message}");
+            }
+
+            return info;
+        }
+
+        private static string FormatGridDetails(List<GridInfo> grids)
+        {
+            var sb = new StringBuilder();
+            sb.AppendLine($"Spawned {grids.Count} grid(s):");
+            sb.AppendLine();
+
+            foreach (var g in grids)
+            {
+                sb.AppendLine($"┌ {g.DisplayName}");
+                sb.AppendLine($"├ EntityId : {g.EntityId}");
+                sb.AppendLine($"├ Position : X:{g.Position.X:F3} Y:{g.Position.Y:F3} Z:{g.Position.Z:F3}");
+                sb.AppendLine($"├ Velocity : X:{g.LinearVelocity.X:F3} Y:{g.LinearVelocity.Y:F3} Z:{g.LinearVelocity.Z:F3}");
+                sb.AppendLine($"├ Blocks ({g.Blocks.Count}):");
+                foreach (var b in g.Blocks)
+                {
+                    sb.AppendLine($"│  [{b.GridPos}] {b.Name} ({b.TypeName})");
+                }
+                sb.AppendLine($"└");
+                sb.AppendLine();
+            }
+
+            return sb.ToString();
+        }
+
+        // ── Post-spawn fixup ───────────────────────────────────────
+
         private static void PostSpawnFixup(MyCubeGrid grid)
         {
             if (grid == null) return;
@@ -286,7 +414,6 @@ namespace MySpawnerController
             var gridType = typeof(MyCubeGrid);
             var flags = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
 
-            // 1. OnAddedToScene — triggers physics, render, update registration
             var onAdded = gridType.GetMethod("OnAddedToScene", flags);
             if (onAdded != null)
             {
@@ -298,7 +425,6 @@ namespace MySpawnerController
                 catch (Exception ex) { Logger.Warn($"  OnAddedToScene: {ex.Message}"); }
             }
 
-            // 2. ActivatePhysics
             var activatePhys = gridType.GetMethod("ActivatePhysics", flags);
             if (activatePhys != null)
             {
@@ -310,7 +436,6 @@ namespace MySpawnerController
                 catch (Exception ex) { Logger.Warn($"  ActivatePhysics: {ex.Message}"); }
             }
 
-            // 3. RegisterCubeGrid in session for save persistence
             var sessionType = MySession.Static?.GetType();
             var registerMethod = sessionType?.GetMethod("RegisterCubeGrid", flags);
             if (registerMethod != null)
@@ -323,6 +448,8 @@ namespace MySpawnerController
                 catch (Exception ex) { Logger.Warn($"  RegisterCubeGrid: {ex.Message}"); }
             }
         }
+
+        // ── Helpers ────────────────────────────────────────────────
 
         private static float ParseFloat(string s, float def)
         {
@@ -341,9 +468,9 @@ namespace MySpawnerController
                 ctx.Response.OutputStream.Write(data, 0, data.Length);
                 ctx.Response.OutputStream.Close();
             }
-            catch {
-
-                //add loging
+            catch (Exception ex)
+            {
+                Logger.Warn($"Respond failed: {ex.Message}");
             }
         }
     }
