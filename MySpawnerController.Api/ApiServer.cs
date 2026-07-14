@@ -69,21 +69,6 @@ namespace MySpawnerController.Api
                 string path = ctx.Request.Url.AbsolutePath.Trim('/');
                 _log($"[ApiServer] {method} /{path}");
 
-                // Swagger
-                if (path == "swagger" || path == "")
-                {
-                    if (method != "GET") { Text(ctx, 405, "Method Not Allowed"); return; }
-                    Html(ctx, 200, SwaggerPage.Html);
-                    return;
-                }
-
-                if (path == "api/v1/openapi.json")
-                {
-                    if (method != "GET") { Text(ctx, 405, "Method Not Allowed"); return; }
-                    JsonRaw(ctx, 200, SwaggerPage.OpenApiSpec);
-                    return;
-                }
-
                 // Health
                 if (path == "api/v1/health")
                 {
@@ -150,7 +135,7 @@ namespace MySpawnerController.Api
                 }
 
                 // 404
-                Json(ctx, 404, new ErrorResponse { Error = "Not Found", Hint = "GET /swagger for API docs" });
+                Json(ctx, 404, new ErrorResponse { Error = "Not Found", Hint = "See /swagger on port 9998 for API docs" });
             }
             catch (Exception ex)
             {
@@ -245,16 +230,6 @@ namespace MySpawnerController.Api
         {
             var json = JsonSerializer.Serialize(obj, JsonOpts);
             Respond(ctx, code, json, "application/json");
-        }
-
-        private static void JsonRaw(HttpListenerContext ctx, int code, string json)
-        {
-            Respond(ctx, code, json, "application/json");
-        }
-
-        private static void Html(HttpListenerContext ctx, int code, string body)
-        {
-            Respond(ctx, code, body, "text/html; charset=utf-8");
         }
 
         private static void Text(HttpListenerContext ctx, int code, string body)

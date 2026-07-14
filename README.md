@@ -1,117 +1,83 @@
 # MySpawnerController — HTTP API for spawning grids
 
-Плагин поднимает REST API сервер на `localhost:9998` со Swagger UI.
-Управляет спавном гридов из локальных чертежей через HTTP-запросы.
+Плагин поднимает JSON API на `localhost:9997`.
+Сваггер запускается **отдельным процессом** на `localhost:9998`.
 
-## Быстрый старт
+## Быстрый старт (всё одной командой)
 
-### 1. Запустить игру
+```powershell
+powershell -ExecutionPolicy Bypass -File build_and_run.ps1
+```
+
+Или двойным кликом: `build_and_run.bat`
+
+Что делает:
+1. Билдит все 3 проекта
+2. Копирует DLL в `Bin64/Plugins/`
+3. Запускает игру с миром `Empty_World_In`
+4. Запускает сваггер в отдельном окне
+5. Ждёт загрузки мира
+6. Спавнит 3 тестовых грида
+
+## Ручной запуск
+
+### Собрать и задеплоить
+```powershell
+powershell -ExecutionPolicy Bypass -File build.ps1
+```
+
+### Запустить игру
 ```batch
 run_world.bat
 ```
-Или: `SpaceEngineersLauncher.exe -world "Empty_World_In"`
 
-### 2. Дождаться загрузки мира
-
-### 3. Открыть Swagger UI
+### Запустить сваггер (отдельный терминал)
+```batch
+run_swagger.bat
 ```
-http://localhost:9998/swagger
-```
+→ Открыть `http://localhost:9998/swagger`
 
-### 4. Спавн всех тестовых гридов
-```powershell
-Invoke-WebRequest -UseBasicParsing -Method POST http://localhost:9998/api/v1/spawn-tests
-```
+## Порты
 
-## API Endpoints
+| Порт | Что | Кто |
+|------|-----|-----|
+| `9997` | JSON API (спавн, гриды, хелс) | Игровой модуль |
+| `9998` | Swagger UI | Отдельный процесс |
+
+## API Endpoints (все на порту 9997)
 
 | Метод | Путь | Описание |
 |-------|------|----------|
-| `GET` | `/swagger` | Swagger UI |
-| `GET` | `/api/v1/openapi.json` | OpenAPI 3.0 спецификация |
-| `GET` | `/api/v1/health` | Статус сессии (`{ "ready": true }`) |
-| `GET` | `/api/v1/blueprints` | Список чертежей в `%APPDATA%/SpaceEngineers/Blueprints/local/` |
+| `GET` | `/api/v1/health` | `{"ready": true/false}` |
+| `GET` | `/api/v1/blueprints` | Список чертежей |
 | `GET` | `/api/v1/grids` | Список заспавненных гридов |
-| `GET` | `/api/v1/grids/{id}` | Детали конкретного грида |
+| `GET` | `/api/v1/grids/{id}` | Детали грида |
 | `DELETE` | `/api/v1/grids/{id}` | Удалить грид |
-| `POST` | `/api/v1/spawn` | Заспавнить грид из чертежа |
-| `POST` | `/api/v1/spawn-tests` | Заспавнить все 3 тестовых грида |
-
-### POST /api/v1/spawn — тело запроса
-
-```json
-{
-  "blueprint": "TestGrid_SingleConnector",
-  "displayName": "MyGrid",
-  "position": { "x": 100, "y": 0, "z": -200 }
-}
-```
-
-| Поле | Тип | Обязательно | Описание |
-|------|-----|-------------|----------|
-| `blueprint` | string | Да | Имя папки чертежа |
-| `displayName` | string | Нет | Кастомное имя грида |
-| `position` | object | Нет | `{ x, y, z }` — позиция спавна |
-
-### POST /api/v1/spawn-tests
-
-Спавнит 3 грида на позициях:
-- `TestGrid_MultiConnectorGrid` @ (0, 0, 0)
-- `TestGrid_PBWithPanel` @ (0, 0, 10)
-- `TestGrid_SingleConnector` @ (0, 0, -10)
+| `POST` | `/api/v1/spawn` | Спавн грида `{"blueprint":"...", "position":{"x":0,"y":0,"z":0}}` |
+| `POST` | `/api/v1/spawn-tests` | Спавн 3 тестовых грида |
 
 ## Примеры PowerShell
 
 ```powershell
 # Спавн всех тестовых гридов
-Invoke-WebRequest -UseBasicParsing -Method POST http://localhost:9998/api/v1/spawn-tests
+Invoke-WebRequest -UseBasicParsing -Method POST http://localhost:9997/api/v1/spawn-tests
 
-# Спавн конкретного грида с кастомным именем
+# Спавн с кастомной позицией
 $body = '{"blueprint":"TestGrid_SingleConnector","displayName":"MyGrid","position":{"x":50,"y":0,"z":100}}'
-Invoke-WebRequest -UseBasicParsing -Method POST http://localhost:9998/api/v1/spawn -Body $body -ContentType "application/json"
+Invoke-WebRequest -UseBasicParsing -Method POST http://localhost:9997/api/v1/spawn -Body $body -ContentType "application/json"
 
 # Проверить здоровье
-(Invoke-WebRequest -UseBasicParsing http://localhost:9998/api/v1/health).Content
-
-# Список чертежей
-(Invoke-WebRequest -UseBasicParsing http://localhost:9998/api/v1/blueprints).Content
-
-# Список гридов
-(Invoke-WebRequest -UseBasicParsing http://localhost:9998/api/v1/grids).Content
+Invoke-WebRequest -UseBasicParsing http://localhost:9997/api/v1/health
 ```
-
-## Сборка и деплой
-
-```powershell
-powershell -ExecutionPolicy Bypass -File build.ps1
-```
-
-Скрипт:
-1. Убивает игру если запущена
-2. Билдит `MySpawnerController.Api` (netstandard2.0)
-3. Билдит `MySpawnerController` (.NET Framework 4.8)
-4. Копирует DLL и NuGet-зависимости в `Bin64/Plugins/`
-5. Регистрирует плагин в `config.xml`
 
 ## Архитектура
 
 ```
-MySpawnerController.Api/     — netstandard2.0, REST API + Swagger
-  ├── Models.cs              — DTOs + ISpawnService
-  ├── ApiServer.cs           — HttpListener routing, JSON
-  └── SwaggerPage.cs         — Swagger UI HTML + OpenAPI spec
-
-MySpawnerController/         — .NET Framework 4.8, PluginLoader target
-  ├── Plugin.cs              — IPlugin entry point
-  ├── Logger.cs              — file logger
-  ├── SessionComponent.cs    — init ApiServer + SpawnService
-  └── SpawnService.cs        — ISpawnService impl (main-thread spawn)
+MySpawnerController.Api/          — netstandard2.0 library: DTOs, ISpawnService, ApiServer
+MySpawnerController/              — .NET Framework 4.8: PluginLoader plugin, SpawnService, game API
+MySpawnerController.Swagger/      — .NET 8.0 console app: Swagger UI server (separate process)
 ```
 
 ## Логи
 
 `%APPDATA%\SpaceEngineers\MySpawnerController.log`
-
-## Порты
-
-- `9998` — MySpawnerController (этот плагин)

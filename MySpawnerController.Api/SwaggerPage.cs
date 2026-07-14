@@ -1,29 +1,105 @@
 namespace MySpawnerController.Api
 {
     /// <summary>
-    /// Embedded Swagger UI page. Served at GET /swagger.
-    /// Uses Swagger UI from CDN with an inline OpenAPI 3.0 spec.
+    /// Self-contained API docs page. Served at GET /swagger.
+    /// No CDN dependencies — works fully offline.
     /// </summary>
     public static class SwaggerPage
     {
         public static readonly string Html = @"<!DOCTYPE html>
-<html>
+<html lang=""en"">
 <head>
-  <meta charset=""utf-8"">
-  <title>MySpawnerController API</title>
-  <link rel=""stylesheet"" href=""https://unpkg.com/swagger-ui-dist@5/swagger-ui.css"">
+<meta charset=""utf-8"">
+<meta name=""viewport"" content=""width=device-width, initial-scale=1"">
+<title>MySpawnerController API</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, -apple-system, sans-serif; background: #1a1a2e; color: #e0e0e0; padding: 20px; }
+  h1 { color: #4fc3f7; margin-bottom: 8px; }
+  .sub { color: #888; margin-bottom: 24px; }
+  .card { background: #16213e; border-radius: 8px; padding: 16px; margin-bottom: 12px; border-left: 4px solid #4fc3f7; }
+  .card:hover { background: #1c2a4a; }
+  .method { display: inline-block; padding: 2px 8px; border-radius: 4px; font-weight: bold; font-size: 12px; margin-right: 8px; min-width: 52px; text-align: center; }
+  .get    { background: #2e7d32; color: #fff; }
+  .post   { background: #1565c0; color: #fff; }
+  .delete { background: #c62828; color: #fff; }
+  .path   { font-family: monospace; font-size: 15px; }
+  .desc   { margin-top: 6px; color: #aaa; font-size: 13px; }
+  .body-example { margin-top: 8px; }
+  .body-example summary { cursor: pointer; color: #81c784; font-size: 13px; }
+  .body-example pre { background: #0d1117; color: #7ee787; padding: 10px; border-radius: 4px; overflow-x: auto; font-size: 12px; margin-top: 4px; }
+  a { color: #64b5f6; }
+</style>
 </head>
 <body>
-  <div id=""swagger-ui""></div>
-  <script src=""https://unpkg.com/swagger-ui-dist@5/swagger-ui-bundle.js""></script>
-  <script>
-    SwaggerUIBundle({
-      url: ""/api/v1/openapi.json"",
-      dom_id: ""#swagger-ui"",
-      deepLinking: true,
-      defaultModelsExpandDepth: 1,
-    });
-  </script>
+
+<h1>MySpawnerController API</h1>
+<p class=""sub"">REST API for spawning Space Engineers grids from local blueprints. Port 9998.</p>
+
+<div class=""card"">
+  <span class=""method get"">GET</span>
+  <span class=""path"">/api/v1/health</span>
+  <div class=""desc"">Session readiness. Returns {""ready"": true} when world is loaded.</div>
+</div>
+
+<div class=""card"">
+  <span class=""method get"">GET</span>
+  <span class=""path"">/api/v1/blueprints</span>
+  <div class=""desc"">List blueprints in %APPDATA%/SpaceEngineers/Blueprints/local/</div>
+</div>
+
+<div class=""card"">
+  <span class=""method get"">GET</span>
+  <span class=""path"">/api/v1/grids</span>
+  <div class=""desc"">List all spawned grids (id, name, position).</div>
+</div>
+
+<div class=""card"">
+  <span class=""method get"">GET</span>
+  <span class=""path"">/api/v1/grids/{id}</span>
+  <div class=""desc"">Get full grid details: name, position, velocity, blocks[] with type and gridPosition.</div>
+</div>
+
+<div class=""card"">
+  <span class=""method delete"">DELETE</span>
+  <span class=""path"">/api/v1/grids/{id}</span>
+  <div class=""desc"">Remove a spawned grid from the world.</div>
+</div>
+
+<div class=""card"">
+  <span class=""method post"">POST</span>
+  <span class=""path"">/api/v1/spawn</span>
+  <div class=""desc"">Spawn a grid from a local blueprint.</div>
+  <details class=""body-example"">
+    <summary>Request body example</summary>
+    <pre>{
+  ""blueprint"": ""TestGrid_SingleConnector"",
+  ""displayName"": ""MyGrid"",
+  ""position"": { ""x"": 100, ""y"": 0, ""z"": -200 }
+}</pre>
+  </details>
+</div>
+
+<div class=""card"">
+  <span class=""method post"">POST</span>
+  <span class=""path"">/api/v1/spawn-tests</span>
+  <div class=""desc"">Spawn all 3 test grids at default positions:
+  <br>TestGrid_MultiConnectorGrid @ (0,0,0)
+  <br>TestGrid_PBWithPanel @ (0,0,10)
+  <br>TestGrid_SingleConnector @ (0,0,-10)</div>
+</div>
+
+<div class=""card"">
+  <span class=""method get"">GET</span>
+  <span class=""path"">/api/v1/openapi.json</span>
+  <div class=""desc""><a href=""/api/v1/openapi.json"">OpenAPI 3.0 spec</a> (for Swagger UI / Postman import).</div>
+</div>
+
+<p style=""margin-top:24px;color:#666;font-size:12px;"">
+  PowerShell quick test:
+  <code style=""color:#81c784;"">Invoke-WebRequest -UseBasicParsing -Method POST http://localhost:9998/api/v1/spawn-tests</code>
+</p>
+
 </body>
 </html>";
 

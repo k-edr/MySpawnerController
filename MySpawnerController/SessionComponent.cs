@@ -6,15 +6,15 @@ using VRage.ObjectBuilders;
 namespace MySpawnerController
 {
     /// <summary>
-    /// Session component that initializes the HTTP API server and
-    /// processes spawn/delete requests on the main game thread.
+    /// Session component: starts JSON API on port 9997.
+    /// Swagger UI is served by a separate process on port 9998.
     /// </summary>
     [MySessionComponentDescriptor(MyUpdateOrder.AfterSimulation, 1000)]
     public class SessionComponent : MySessionComponentBase
     {
         private ApiServer _apiServer;
         private SpawnService _spawnService;
-        private const int Port = 9998;
+        private const int Port = 9997;
 
         public override void Init(MyObjectBuilder_SessionComponent sessionComponent)
         {

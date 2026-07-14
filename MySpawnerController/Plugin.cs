@@ -16,7 +16,7 @@ namespace MySpawnerController
         public void Init(object gameInstance)
         {
             Logger.Init();
-            Logger.Info("Plugin loaded. Swagger UI at http://localhost:9998/swagger");
+            Logger.Info("Plugin loaded. Game API: http://localhost:9997 | Swagger: http://localhost:9998/swagger (separate process)");
         }
 
         public void Update() { }
