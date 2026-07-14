@@ -43,6 +43,7 @@
     <Reference Include="System.Net.Http" />
     <Reference Include="System.Xml" />
   </ItemGroup>
+  <!-- Game DLLs -->
   <ItemGroup>
     <Reference Include="VRage">
       <HintPath>D:\SteamLibrary\steamapps\common\SpaceEngineers\Bin64\VRage.dll</HintPath>
@@ -69,10 +70,18 @@
       <Private>False</Private>
     </Reference>
   </ItemGroup>
+  <!-- API project output (built first by build.ps1) -->
+  <ItemGroup>
+    <Reference Include="MySpawnerController.Api">
+      <HintPath>..\MySpawnerController.Api\bin\Release\netstandard2.0\MySpawnerController.Api.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+  </ItemGroup>
   <ItemGroup>
     <Compile Include="Logger.cs" />
     <Compile Include="Plugin.cs" />
     <Compile Include="SessionComponent.cs" />
+    <Compile Include="SpawnService.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
