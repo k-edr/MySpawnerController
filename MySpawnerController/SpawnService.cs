@@ -4,7 +4,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Threading;
-using MySpawnerController.Api;
+using MySpawnerController.Api.Application;
+using MySpawnerController.Shared;
 using Sandbox.Game.Entities;
 using Sandbox.Game.World;
 using Sandbox.ModAPI;
@@ -120,7 +121,7 @@ namespace MySpawnerController
 
         public bool DeleteGrid(long id)
         {
-            if (!_trackedGrids.TryRemove(id, out var grid) || grid == null)
+            if (!_trackedGrids.TryGetValue(id, out var grid) || grid == null)
                 return false;
 
             var task = new DeleteTask { EntityId = id };
@@ -253,7 +254,7 @@ namespace MySpawnerController
         {
             try
             {
-                if (_trackedGrids.TryGetValue(task.EntityId, out var grid))
+                if (_trackedGrids.TryRemove(task.EntityId, out var grid))
                 {
                     grid.Close();
                     task.Result = true;

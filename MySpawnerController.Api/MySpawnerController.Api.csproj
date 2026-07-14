@@ -3,9 +3,13 @@
     <TargetFramework>netstandard2.0</TargetFramework>
     <RootNamespace>MySpawnerController.Api</RootNamespace>
     <AssemblyName>MySpawnerController.Api</AssemblyName>
-    <LangVersion>9</LangVersion>
+    <LangVersion>12</LangVersion>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
   </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\MySpawnerController.Shared\MySpawnerController.Shared.csproj" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="System.Text.Json" Version="8.0.4" />

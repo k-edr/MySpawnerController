@@ -1,6 +1,7 @@
 $ErrorActionPreference = "Stop"
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 
+$sharedProject  = Join-Path $scriptDir "MySpawnerController.Shared"
 $apiProject     = Join-Path $scriptDir "MySpawnerController.Api"
 $mainProject    = Join-Path $scriptDir "MySpawnerController"
 $swaggerProject = Join-Path $scriptDir "MySpawnerController.Swagger"
@@ -14,8 +15,9 @@ Write-Host "============================================" -ForegroundColor Cyan
 Write-Host ""
 
 # --- Validate paths ---
-if (-not (Test-Path $mainProject))    { Write-Error "Main project dir not found: $mainProject"; exit 1 }
+if (-not (Test-Path $sharedProject))  { Write-Error "Shared project dir not found: $sharedProject"; exit 1 }
 if (-not (Test-Path $apiProject))     { Write-Error "API project dir not found: $apiProject"; exit 1 }
+if (-not (Test-Path $mainProject))    { Write-Error "Main project dir not found: $mainProject"; exit 1 }
 if (-not (Test-Path $swaggerProject)) { Write-Error "Swagger project dir not found: $swaggerProject"; exit 1 }
 if (-not (Test-Path $seBin64))        { Write-Error "SE Bin64 not found: $seBin64"; exit 1 }
 if (-not (Test-Path $pluginsDir))     { Write-Error "Plugins dir not found: $pluginsDir"; exit 1 }
@@ -32,7 +34,7 @@ if ($seProc -or $launcherProc) {
 }
 
 # --- 1. Find MSBuild ---
-Write-Host "[1/8] Locating MSBuild..." -ForegroundColor Yellow
+Write-Host "[1/9] Locating MSBuild..." -ForegroundColor Yellow
 
 $msbuildPaths = @(
     "${env:ProgramFiles}\Microsoft Visual Studio\2022\Community\MSBuild\Current\Bin\MSBuild.exe",
@@ -62,8 +64,19 @@ if (-not $msbuild) {
 
 if (-not $msbuild -or -not (Test-Path $msbuild)) { Write-Error "MSBuild not found."; exit 1 }
 
-# --- 2. Build API project (netstandard2.0) ---
-Write-Host "[2/8] Building MySpawnerController.Api..." -ForegroundColor Yellow
+# --- 2. Build Shared project (netstandard2.0) ---
+Write-Host "[2/9] Building MySpawnerController.Shared..." -ForegroundColor Yellow
+$sharedCsproj = Join-Path $sharedProject "MySpawnerController.Shared.csproj"
+
+$result = & $msbuild $sharedCsproj /p:Configuration=Release /t:Restore /v:minimal /nologo 2>&1
+if ($LASTEXITCODE -ne 0) { Write-Host "SHARED RESTORE FAILED" -ForegroundColor Red; Write-Host ($result -join "`n"); exit 1 }
+
+$result = & $msbuild $sharedCsproj /p:Configuration=Release /t:Rebuild /v:minimal /nologo 2>&1
+if ($LASTEXITCODE -ne 0) { Write-Host "SHARED BUILD FAILED" -ForegroundColor Red; Write-Host ($result -join "`n"); exit 1 }
+Write-Host "  Shared Build OK" -ForegroundColor Green
+
+# --- 3. Build API project (netstandard2.0) ---
+Write-Host "[3/9] Building MySpawnerController.Api..." -ForegroundColor Yellow
 $apiCsproj = Join-Path $apiProject "MySpawnerController.Api.csproj"
 
 $result = & $msbuild $apiCsproj /p:Configuration=Release /t:Restore /v:minimal /nologo 2>&1
@@ -73,16 +86,16 @@ $result = & $msbuild $apiCsproj /p:Configuration=Release /t:Rebuild /v:minimal /
 if ($LASTEXITCODE -ne 0) { Write-Host "API BUILD FAILED" -ForegroundColor Red; Write-Host ($result -join "`n"); exit 1 }
 Write-Host "  API Build OK" -ForegroundColor Green
 
-# --- 3. Build main project (.NET Framework 4.8) ---
-Write-Host "[3/8] Building MySpawnerController..." -ForegroundColor Yellow
+# --- 4. Build main project (.NET Framework 4.8) ---
+Write-Host "[4/9] Building MySpawnerController..." -ForegroundColor Yellow
 $mainCsproj = Join-Path $mainProject "MySpawnerController.csproj"
 
 $result = & $msbuild $mainCsproj /p:Configuration=Release /t:Rebuild /v:minimal /nologo 2>&1
 if ($LASTEXITCODE -ne 0) { Write-Host "MAIN BUILD FAILED" -ForegroundColor Red; Write-Host ($result -join "`n"); exit 1 }
 Write-Host "  Main Build OK" -ForegroundColor Green
 
-# --- 4. Build Swagger project (net8.0 console app) ---
-Write-Host "[4/8] Building MySpawnerController.Swagger..." -ForegroundColor Yellow
+# --- 5. Build Swagger project (net8.0) ---
+Write-Host "[5/9] Building MySpawnerController.Swagger..." -ForegroundColor Yellow
 $swaggerCsproj = Join-Path $swaggerProject "MySpawnerController.Swagger.csproj"
 
 $result = & $msbuild $swaggerCsproj /p:Configuration=Release /t:Restore /v:minimal /nologo 2>&1
@@ -93,8 +106,8 @@ if ($LASTEXITCODE -ne 0) { Write-Host "SWAGGER BUILD FAILED" -ForegroundColor Re
 Write-Host "  Swagger Build OK" -ForegroundColor Green
 Write-Host ""
 
-# --- 5. Copy DLLs ---
-Write-Host "[5/8] Copying DLLs..." -ForegroundColor Yellow
+# --- 6. Copy DLLs ---
+Write-Host "[6/9] Copying DLLs..." -ForegroundColor Yellow
 
 # Main plugin DLL (with retry)
 $mainDllPath = Join-Path $pluginsDir "MySpawnerController.dll"
@@ -108,6 +121,14 @@ for ($i = 0; $i -lt 5; $i++) {
 }
 if (-not $copied) { Write-Error "Cannot copy main DLL - file locked."; exit 1 }
 Write-Host "  MySpawnerController.dll" -ForegroundColor Green
+
+# Shared DLL
+$sharedOut = Join-Path $sharedProject "bin\Release\netstandard2.0"
+$sharedDll = Join-Path $sharedOut "MySpawnerController.Shared.dll"
+if (Test-Path $sharedDll) {
+    Copy-Item -Path $sharedDll -Destination (Join-Path $pluginsDir "MySpawnerController.Shared.dll") -Force
+    Write-Host "  MySpawnerController.Shared.dll" -ForegroundColor Green
+}
 
 # API DLL
 $apiOut = Join-Path $apiProject "bin\Release\netstandard2.0"
@@ -129,7 +150,7 @@ foreach ($dep in $nugetDeps) {
     }
 }
 
-# Swagger exe (publish as self-contained folder)
+# Swagger exe
 $swaggerOut = Join-Path $swaggerProject "bin\Release\net8.0"
 $swaggerDest = Join-Path $pluginsDir "Swagger"
 if (-not (Test-Path $swaggerDest)) { New-Item -ItemType Directory -Path $swaggerDest -Force | Out-Null }
@@ -138,7 +159,6 @@ $swaggerExe = Join-Path $swaggerOut "MySpawnerController.Swagger.exe"
 if (Test-Path $swaggerExe) {
     Copy-Item -Path $swaggerExe -Destination $swaggerDest -Force
     Write-Host "  MySpawnerController.Swagger.exe" -ForegroundColor Green
-    # Copy runtime deps too
     Get-ChildItem -Path $swaggerOut -Filter "*.dll" | ForEach-Object {
         Copy-Item -Path $_.FullName -Destination $swaggerDest -Force
     }
@@ -149,8 +169,8 @@ if (Test-Path $swaggerExe) {
 
 Write-Host ""
 
-# --- 6. Update config.xml ---
-Write-Host "[6/8] Updating PluginLoader config.xml..." -ForegroundColor Yellow
+# --- 7. Update config.xml ---
+Write-Host "[7/9] Updating PluginLoader config.xml..." -ForegroundColor Yellow
 
 [xml]$config = Get-Content $configXml -Encoding UTF8
 
@@ -180,8 +200,8 @@ if (-not $alreadyExists) {
 }
 Write-Host ""
 
-# --- 7. Summary ---
-Write-Host "[7/8] Done!" -ForegroundColor Green
+# --- 8. Summary ---
+Write-Host "[8/9] Done!" -ForegroundColor Green
 Write-Host ""
 Write-Host "  Plugins dir : $pluginsDir"
 Write-Host "  Config      : $configXml"

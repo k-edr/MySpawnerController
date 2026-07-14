@@ -72,6 +72,10 @@
   </ItemGroup>
   <!-- API project output (built first by build.ps1) -->
   <ItemGroup>
+    <Reference Include="MySpawnerController.Shared">
+      <HintPath>..\MySpawnerController.Shared\bin\Release\netstandard2.0\MySpawnerController.Shared.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
     <Reference Include="MySpawnerController.Api">
       <HintPath>..\MySpawnerController.Api\bin\Release\netstandard2.0\MySpawnerController.Api.dll</HintPath>
       <Private>False</Private>

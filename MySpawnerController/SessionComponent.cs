@@ -1,4 +1,4 @@
-using MySpawnerController.Api;
+using MySpawnerController.Api.Infrastructure;
 using VRage.Game;
 using VRage.Game.Components;
 using VRage.ObjectBuilders;
