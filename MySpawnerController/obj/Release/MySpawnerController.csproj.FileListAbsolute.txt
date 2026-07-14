@@ -1,6 +1,0 @@
-D:\repos\SE.Plugins\MySpawnerController\MySpawnerController\obj\Release\MySpawnerController.csproj.AssemblyReference.cache
-D:\repos\SE.Plugins\MySpawnerController\MySpawnerController\obj\Release\MySpawnerController.csproj.CoreCompileInputs.cache
-D:\repos\SE.Plugins\MySpawnerController\MySpawnerController\bin\Release\MySpawnerController.dll
-D:\repos\SE.Plugins\MySpawnerController\MySpawnerController\bin\Release\MySpawnerController.pdb
-D:\repos\SE.Plugins\MySpawnerController\MySpawnerController\obj\Release\MySpawnerController.dll
-D:\repos\SE.Plugins\MySpawnerController\MySpawnerController\obj\Release\MySpawnerController.pdb
