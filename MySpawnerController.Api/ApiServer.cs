@@ -28,7 +28,7 @@ namespace MySpawnerController.Api
             _spawnService = spawnService;
             _log = log ?? (_ => { });
             _listener = new HttpListener();
-            _listener.Prefixes.Add($"http://+:{port}/");
+            _listener.Prefixes.Add($"http://localhost:{port}/");
         }
 
         public void Start()
