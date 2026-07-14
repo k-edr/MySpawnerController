@@ -20,6 +20,7 @@ namespace MySpawnerController.Api
         private readonly HttpListener _listener;
         private readonly ISpawnService _spawnService;
         private readonly Action<string> _log;
+        private readonly int _port;
         private Thread _thread;
         private volatile bool _running;
 
@@ -27,6 +28,7 @@ namespace MySpawnerController.Api
         {
             _spawnService = spawnService;
             _log = log ?? (_ => { });
+            _port = port;
             _listener = new HttpListener();
             _listener.Prefixes.Add($"http://localhost:{port}/");
         }
@@ -37,7 +39,7 @@ namespace MySpawnerController.Api
             _running = true;
             _thread = new Thread(Listen) { IsBackground = true, Name = "ApiServer" };
             _thread.Start();
-            _log("[ApiServer] Listening on port " + _listener.Prefixes);
+            _log("[ApiServer] Listening on http://localhost:" + _port);
         }
 
         public void Dispose()
@@ -68,6 +70,13 @@ namespace MySpawnerController.Api
                 string method = ctx.Request.HttpMethod;
                 string path = ctx.Request.Url.AbsolutePath.Trim('/');
                 _log($"[ApiServer] {method} /{path}");
+
+                // CORS preflight
+                if (method == "OPTIONS")
+                {
+                    Text(ctx, 204, "");
+                    return;
+                }
 
                 // Health
                 if (path == "api/v1/health")
@@ -241,6 +250,10 @@ namespace MySpawnerController.Api
         {
             try
             {
+                ctx.Response.AddHeader("Access-Control-Allow-Origin", "http://localhost:9998");
+                ctx.Response.AddHeader("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS");
+                ctx.Response.AddHeader("Access-Control-Allow-Headers", "Content-Type");
+
                 byte[] data = Encoding.UTF8.GetBytes(body);
                 ctx.Response.StatusCode = code;
                 ctx.Response.ContentType = contentType;
