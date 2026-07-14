@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
+using System.Reflection;
 using System.Text;
 using System.Threading;
 using Sandbox.Game.Entities;
@@ -17,14 +18,6 @@ using VRageMath;
 
 namespace MySpawnerController
 {
-    /// <summary>
-    /// HTTP-controlled grid spawner: http://localhost:9998/
-    ///
-    /// GET /spawn                        — all 3 test grids at default positions
-    /// GET /spawn?name=X&x=0&y=0&z=0    — single grid at custom position
-    /// GET /status                       — health check
-    /// GET /list                         — available blueprints
-    /// </summary>
     [MySessionComponentDescriptor(MyUpdateOrder.AfterSimulation, 1000)]
     public class SessionComponent : MySessionComponentBase
     {
@@ -47,8 +40,6 @@ namespace MySpawnerController
             "SpaceEngineers", "Blueprints", "local");
 
         private const int Port = 9998;
-
-        // ── Lifecycle ──────────────────────────────────────────────
 
         public override void Init(MyObjectBuilder_SessionComponent sessionComponent)
         {
@@ -73,8 +64,6 @@ namespace MySpawnerController
             }
         }
 
-        // ── HTTP server ────────────────────────────────────────────
-
         private void StartHttpListener()
         {
             _listener = new HttpListener();
@@ -89,7 +78,7 @@ namespace MySpawnerController
             };
             _listenThread.Start();
 
-            Logger.Info($"Listening on http://localhost:{Port}/");
+            Logger.Info($"HTTP server started on http://localhost:{Port}/");
         }
 
         private void ListenLoop()
@@ -111,22 +100,19 @@ namespace MySpawnerController
             try
             {
                 string path = ctx.Request.Url.AbsolutePath.Trim('/');
-                Logger.Info($"{ctx.Request.HttpMethod} /{path}");
+                Logger.Info($"HTTP {ctx.Request.HttpMethod} /{path}");
 
                 switch (path)
                 {
                     case "status":
                         Respond(ctx, 200, "OK");
                         break;
-
                     case "list":
                         HandleList(ctx);
                         break;
-
                     case "spawn":
                         HandleSpawn(ctx);
                         break;
-
                     default:
                         Respond(ctx, 404, "Try /spawn, /spawn?name=X&x=0&y=0&z=0, /status, /list");
                         break;
@@ -198,8 +184,6 @@ namespace MySpawnerController
             }
         }
 
-        // ── Main-thread spawn ──────────────────────────────────────
-
         private void ProcessSpawnItem((string BpFile, Vector3D Offset, string Name,
             HttpListenerContext Ctx, bool IsBatch, StringBuilder BatchLog) item)
         {
@@ -219,18 +203,19 @@ namespace MySpawnerController
 
         private static bool SpawnBlueprint(string bpFile, Vector3D offset, string blueprintName)
         {
-            Logger.Info($"Spawn: {blueprintName} @ {offset}");
+            Logger.Info($"Spawning: {blueprintName} @ X:{offset.X} Y:{offset.Y} Z:{offset.Z}");
 
-            // Deserialize SBC (definition XML with xsi:type support)
             MyObjectBuilder_Definitions definitions = null;
             try
             {
+                Logger.Info("  Deserializing SBC via DeserializeXML...");
                 using (var stream = File.OpenRead(bpFile))
                 {
                     VRage.ObjectBuilders.Private.MyObjectBuilderSerializerKeen.DeserializeXML(
                         stream, out MyObjectBuilder_Base obj, typeof(MyObjectBuilder_Definitions));
                     definitions = obj as MyObjectBuilder_Definitions;
                 }
+                Logger.Info($"  DeserializeXML: ok={(definitions != null)}, definitions={(definitions?.ShipBlueprints?.Length > 0)}");
             }
             catch (Exception ex)
             {
@@ -240,17 +225,20 @@ namespace MySpawnerController
 
             if (definitions?.ShipBlueprints == null || definitions.ShipBlueprints.Length == 0)
             {
-                Logger.Error($"No ShipBlueprints: {blueprintName}");
+                Logger.Error($"No ShipBlueprints in {blueprintName}");
                 return false;
             }
+
+            Logger.Info($"  ShipBlueprints.Length={definitions.ShipBlueprints.Length}");
 
             var shipBp = definitions.ShipBlueprints[0];
             if (shipBp.CubeGrids == null || shipBp.CubeGrids.Length == 0)
             {
-                Logger.Error($"No CubeGrids: {blueprintName}");
+                Logger.Error($"No CubeGrids in {blueprintName}");
                 return false;
             }
 
+            //maybe should be outside the method.
             var gridBuilders = new List<MyObjectBuilder_CubeGrid>();
             foreach (var grid in shipBp.CubeGrids)
             {
@@ -263,21 +251,78 @@ namespace MySpawnerController
 
             foreach (var gb in gridBuilders)
             {
+                // Critical: blueprint SBCs don't set these — without them, grid is phantom
+                gb.CreatePhysics = true;
+                gb.Editable = true;
+                gb.DestructibleBlocks = true;
+
                 var po = gb.PositionAndOrientation;
                 MatrixD m = po.HasValue
                     ? MatrixD.CreateWorld(po.Value.Position + offset, po.Value.Forward, po.Value.Up)
                     : MatrixD.CreateWorld(offset, Vector3D.Forward, Vector3D.Up);
                 gb.PositionAndOrientation = new MyPositionAndOrientation(m);
 
+                Logger.Info($"  CreatePhysics={gb.CreatePhysics}, Editable={gb.Editable}");
+
                 IMyEntity ent = MyAPIGateway.Entities.CreateFromObjectBuilderAndAdd(gb);
                 if (ent is MyCubeGrid g)
+                {
+                    PostSpawnFixup(g);
                     Logger.Info($"  OK: {g.DisplayName} Id={g.EntityId}");
+                }
             }
 
             return true;
         }
 
-        // ── Helpers ────────────────────────────────────────────────
+        /// <summary>
+        /// Fix phantom grid: trigger OnAddedToScene + ActivatePhysics + RegisterCubeGrid.
+        /// CreateFromObjectBuilderAndAdd alone gives visual-only grids (no physics, no save).
+        /// </summary>
+        private static void PostSpawnFixup(MyCubeGrid grid)
+        {
+            if (grid == null) return;
+
+            var gridType = typeof(MyCubeGrid);
+            var flags = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
+
+            // 1. OnAddedToScene — triggers physics, render, update registration
+            var onAdded = gridType.GetMethod("OnAddedToScene", flags);
+            if (onAdded != null)
+            {
+                try
+                {
+                    onAdded.Invoke(grid, new object[] { grid });
+                    Logger.Info("  OnAddedToScene OK");
+                }
+                catch (Exception ex) { Logger.Warn($"  OnAddedToScene: {ex.Message}"); }
+            }
+
+            // 2. ActivatePhysics
+            var activatePhys = gridType.GetMethod("ActivatePhysics", flags);
+            if (activatePhys != null)
+            {
+                try
+                {
+                    activatePhys.Invoke(grid, null);
+                    Logger.Info("  ActivatePhysics OK");
+                }
+                catch (Exception ex) { Logger.Warn($"  ActivatePhysics: {ex.Message}"); }
+            }
+
+            // 3. RegisterCubeGrid in session for save persistence
+            var sessionType = MySession.Static?.GetType();
+            var registerMethod = sessionType?.GetMethod("RegisterCubeGrid", flags);
+            if (registerMethod != null)
+            {
+                try
+                {
+                    registerMethod.Invoke(MySession.Static, new object[] { grid });
+                    Logger.Info("  RegisterCubeGrid OK");
+                }
+                catch (Exception ex) { Logger.Warn($"  RegisterCubeGrid: {ex.Message}"); }
+            }
+        }
 
         private static float ParseFloat(string s, float def)
         {
@@ -296,7 +341,10 @@ namespace MySpawnerController
                 ctx.Response.OutputStream.Write(data, 0, data.Length);
                 ctx.Response.OutputStream.Close();
             }
-            catch { /* disconnected */ }
+            catch {
+
+                //add loging
+            }
         }
     }
 }
