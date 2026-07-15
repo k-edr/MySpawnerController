@@ -1,36 +1,36 @@
 # Space Engineers Plugin API Documentation
 
-Документация основана на анализе DLL из `D:\SteamLibrary\steamapps\common\SpaceEngineers\Bin64\`
-(версия игры `1209024`).
+Documentation is based on DLL analysis from `D:\SteamLibrary\steamapps\common\SpaceEngineers\Bin64\`
+(game version `1209024`).
 
 ---
 
-## 1. Архитектура игры
+## 1. Game Architecture
 
-### Стек сборок (снизу вверх)
+### Assembly Stack (bottom to top)
 
-| DLL | Назначение |
-|-----|-----------|
-| `VRage.dll` | Базовый движок: сериализация, идентификаторы, Plugins API |
-| `VRage.Math.dll` | Математика: Vector3, MatrixD, BoundingBox и т.д. |
-| `VRage.Game.dll` | Игровой фреймворк: Entity, Components, ObjectBuilders, Definitions |
-| `VRage.Render.dll` | Рендеринг |
-| `Sandbox.Common.dll` | ModAPI интерфейсы (`IMyCubeGrid`, `IMyEntities`, `MyAPIGateway`) |
-| `Sandbox.Game.dll` | Реализация Sandbox: `MyEntities`, `MySession`, `MyPrefabManager` |
-| `SpaceEngineers.Game.dll` | Игровая логика SE |
-| `SpaceEngineers.ObjectBuilders.dll` | ObjectBuilders специфичные для SE |
-| `PluginLoader.dll` | Загрузчик плагинов (avaness.PluginLoader) |
+| DLL | Purpose |
+|-----|---------|
+| `VRage.dll` | Core engine: serialization, identifiers, Plugins API |
+| `VRage.Math.dll` | Math: Vector3, MatrixD, BoundingBox, etc. |
+| `VRage.Game.dll` | Game framework: Entity, Components, ObjectBuilders, Definitions |
+| `VRage.Render.dll` | Rendering |
+| `Sandbox.Common.dll` | ModAPI interfaces (`IMyCubeGrid`, `IMyEntities`, `MyAPIGateway`) |
+| `Sandbox.Game.dll` | Sandbox implementation: `MyEntities`, `MySession`, `MyPrefabManager` |
+| `SpaceEngineers.Game.dll` | SE game logic |
+| `SpaceEngineers.ObjectBuilders.dll` | SE-specific ObjectBuilders |
+| `PluginLoader.dll` | Plugin loader (avaness.PluginLoader) |
 
-### Версия .NET
+### .NET Version
 
-- **Целевой фреймворк**: .NET Framework 4.6.1 (из `SpaceEngineers.exe.config`)
-- **Фактический**: совместим с 4.8 (присутствуют сборки System.Memory 4.0.1.2, System.Runtime.CompilerServices.Unsafe 6.0.0.0)
+- **Target framework**: .NET Framework 4.6.1 (from `SpaceEngineers.exe.config`)
+- **Actual**: Compatible with 4.8 (assemblies present: System.Memory 4.0.1.2, System.Runtime.CompilerServices.Unsafe 6.0.0.0)
 
 ---
 
 ## 2. PluginLoader API
 
-### Интерфейс плагина (`VRage.Plugins`)
+### Plugin Interface (`VRage.Plugins`)
 
 ```csharp
 namespace VRage.Plugins
@@ -44,15 +44,15 @@ namespace VRage.Plugins
 }
 ```
 
-PluginLoader ищет в сборке класс, реализующий `IPlugin`, создаёт его экземпляр и вызывает:
+PluginLoader searches the assembly for a class implementing `IPlugin`, creates an instance, and calls:
 
-1. `Init(gameInstance)` — при загрузке плагина. `gameInstance` — экземпляр `SpaceEngineersGame`.
-2. `Update()` — каждый кадр.
-3. `Dispose()` — при выгрузке.
+1. `Init(gameInstance)` — on plugin load. `gameInstance` is a `SpaceEngineersGame` instance.
+2. `Update()` — every frame.
+3. `Dispose()` — on unload.
 
-### Авторегистрация SessionComponent
+### Auto-Registration of SessionComponent
 
-Классы с атрибутом `[MySessionComponentDescriptor]` автоматически регистрируются в `MySession`:
+Classes with the `[MySessionComponentDescriptor]` attribute are auto-registered in `MySession`:
 
 ```csharp
 [MySessionComponentDescriptor(MyUpdateOrder updateOrder, int priority)]
@@ -64,17 +64,17 @@ public class MyComponent : MySessionComponentBase
 }
 ```
 
-**UpdateOrder** определяет, на каком этапе игрового цикла вызывается компонент:
+**UpdateOrder** determines at which stage of the game loop the component is called:
 
-| Значение | Когда вызывается |
-|----------|-----------------|
-| `BeforeSimulation` | До физической симуляции |
-| `AfterSimulation` | После физической симуляции |
-| `NoUpdate` | Только событийная модель |
+| Value | When called |
+|-------|-------------|
+| `BeforeSimulation` | Before physics simulation |
+| `AfterSimulation` | After physics simulation |
+| `NoUpdate` | Event-driven only |
 
-### Конфигурация PluginLoader
+### PluginLoader Configuration
 
-Файл: `Bin64\Plugins\config.xml`
+File: `Bin64\Plugins\config.xml`
 ```xml
 <PluginConfig>
   <Plugins>
@@ -85,90 +85,90 @@ public class MyComponent : MySessionComponentBase
 
 ---
 
-## 3. MyAPIGateway — главная точка входа
+## 3. MyAPIGateway — Main Entry Point
 
 ```csharp
 Sandbox.ModAPI.MyAPIGateway
 ```
 
-| Свойство | Тип | Назначение |
-|----------|-----|-----------|
-| `Session` | `IMySession` | Текущая сессия |
-| `Entities` | `IMyEntities` | Все сущности в мире |
-| `Players` | — | Игроки |
-| `PrefabManager` | `IMyPrefabManager` | Спавн префабов |
-| `Utilities` | `IMyUtilities` | I/O, моды, нотификации |
-| `Multiplayer` | `IMyMultiplayer` | Сеть |
-| `Physics` | — | Физика |
+| Property | Type | Purpose |
+|----------|------|---------|
+| `Session` | `IMySession` | Current session |
+| `Entities` | `IMyEntities` | All entities in the world |
+| `Players` | — | Players |
+| `PrefabManager` | `IMyPrefabManager` | Prefab spawning |
+| `Utilities` | `IMyUtilities` | I/O, mods, notifications |
+| `Multiplayer` | `IMyMultiplayer` | Networking |
+| `Physics` | — | Physics |
 | `Gui` | `IMyGui` | GUI |
-| `CubeBuilder` | — | Строительство |
-| `TerminalControls` | — | Управление блоками |
+| `CubeBuilder` | — | Building |
+| `TerminalControls` | — | Block control |
 
 ---
 
-## 4. Спавн сущностей (IMyEntities)
+## 4. Entity Spawning (IMyEntities)
 
-### Создание из ObjectBuilder
+### Creating from ObjectBuilder
 
 ```csharp
-// 1. Только создать объект (без добавления в мир)
+// 1. Create object only (without adding to world)
 IMyEntity entity = MyAPIGateway.Entities.CreateFromObjectBuilder(objectBuilder);
 
-// 2. Создать и сразу добавить в мир
+// 2. Create and immediately add to world
 IMyEntity entity = MyAPIGateway.Entities.CreateFromObjectBuilderAndAdd(objectBuilder);
 
-// 3. Добавить существующую сущность в мир
+// 3. Add existing entity to world
 MyAPIGateway.Entities.AddEntity(entity, insertIntoScene: true);
 ```
 
-### Ремап EntityId
+### EntityId Remapping
 
-При спавне из чертежа/префаба ID сущностей могут конфликтовать. Нужен ремап:
+When spawning from a blueprint/prefab, entity IDs may conflict. Remapping is required:
 
 ```csharp
-// Ремап коллекции object builders
+// Remap a collection of object builders
 MyAPIGateway.Entities.RemapObjectBuilderCollection(builders);
 
-// Ремап одиночного object builder
+// Remap a single object builder
 MyAPIGateway.Entities.RemapObjectBuilder(builder);
 ```
 
-### Поиск свободного места
+### Finding Free Space
 
 ```csharp
 Vector3D? pos = MyAPIGateway.Entities.FindFreePlace(
-    position,       // Vector3D — желаемая позиция
-    sphereRadius,   // float
-    maxTestCount,   // int
+    position,         // Vector3D — desired position
+    sphereRadius,     // float
+    maxTestCount,     // int
     testsPerDistance, // int
-    stepSize        // float
+    stepSize          // float
 );
 ```
 
 ---
 
-## 5. Спавн префабов (IMyPrefabManager)
+## 5. Prefab Spawning (IMyPrefabManager)
 
-### SpawnPrefab (синхронизированный)
+### SpawnPrefab (synchronized)
 
 ```csharp
 MyAPIGateway.PrefabManager.SpawnPrefab(
-    resultList,              // List<IMyCubeGrid> — сюда попадут заспавненные гриды
-    prefabName,              // string — имя префаба (SubtypeId)
+    resultList,              // List<IMyCubeGrid> — spawned grids will be placed here
+    prefabName,              // string — prefab name (SubtypeId)
     position,                // Vector3D
     forward,                 // Vector3
     up,                      // Vector3
     initialLinearVelocity,   // Vector3
     initialAngularVelocity,  // Vector3
-    beaconName,              // string — имя маяка (опционально)
+    beaconName,              // string — beacon name (optional)
     spawningOptions,         // SpawningOptions
-    ownerId,                 // long — ID владельца
-    spawnAtSync,             // bool — синхронизировать по сети
-    callback                 // Action — вызывается после создания
+    ownerId,                 // long — owner ID
+    spawnAtSync,             // bool — network-synced
+    callback                 // Action — called after creation
 );
 ```
 
-### SpawningOptions (флаги)
+### SpawningOptions (flags)
 
 ```csharp
 [Flags]
@@ -178,23 +178,23 @@ public enum SpawningOptions
     RotateFirstCockpitTowardsDirection = 1 << 0,
     SpawnRandomCargo            = 1 << 1,
     DisableDampeners            = 1 << 2,
-    SetNeutralOwner            = 1 << 3,
-    TurnOffReactors            = 1 << 4,
-    DisableSave                = 1 << 5,
-    UseGridOrigin              = 1 << 6,
-    SetAuthorship              = 1 << 7,
-    ReplaceColor               = 1 << 8,
-    UseOnlyWorldMatrix         = 1 << 9,
-    RandomizeColor             = 1 << 10,
-    SetNpcSpawnedGrid          = 1 << 11,
-    SetOwnerNobody             = 1 << 12,
+    SetNeutralOwner             = 1 << 3,
+    TurnOffReactors             = 1 << 4,
+    DisableSave                 = 1 << 5,
+    UseGridOrigin               = 1 << 6,
+    SetAuthorship               = 1 << 7,
+    ReplaceColor                = 1 << 8,
+    UseOnlyWorldMatrix          = 1 << 9,
+    RandomizeColor              = 1 << 10,
+    SetNpcSpawnedGrid           = 1 << 11,
+    SetOwnerNobody              = 1 << 12,
 }
 ```
 
-### MyPrefabManager (внутренний, без синхронизации)
+### MyPrefabManager (internal, non-synchronized)
 
 ```csharp
-// Несинхронизированный спавн
+// Non-synchronized spawn
 Sandbox.Game.World.MyPrefabManager.AddShipPrefab(
     prefabName,       // string
     position,         // MatrixD?
@@ -202,7 +202,7 @@ Sandbox.Game.World.MyPrefabManager.AddShipPrefab(
     spawnWithWelder   // bool
 );
 
-// Спавн на случайной позиции
+// Spawn at random position
 Sandbox.Game.World.MyPrefabManager.AddShipPrefabRandomPosition(
     prefabName,       // string
     origin,           // Vector3D
@@ -214,43 +214,43 @@ Sandbox.Game.World.MyPrefabManager.AddShipPrefabRandomPosition(
 
 ---
 
-## 6. Сериализация / Десериализация
+## 6. Serialization / Deserialization
 
-### MyObjectBuilderSerializer (публичный API)
+### MyObjectBuilderSerializer (public API)
 
 ```csharp
-// ⚠️ DeserializePB НЕ работает для .sbc файлов с xsi:type — возвращает null
-// Ниже — что пробовали и почему не сработало:
+// ⚠️ DeserializePB does NOT work for .sbc files with xsi:type — returns null
+// Below: what we tried and why it didn't work:
 
-// Public DeserializePB — для .sbs (Protobuf), не .sbc (XML+xsi:type)
+// Public DeserializePB — for .sbs (Protobuf), not .sbc (XML+xsi:type)
 MyObjectBuilderSerializer.DeserializePB<T>(filePath, out result); // → null
 
-// Private Keen DeserializePB — тоже null для SBC
+// Private Keen DeserializePB — also null for SBC
 VRage.ObjectBuilders.Private.MyObjectBuilderSerializerKeen.DeserializePB(...); // → null
 ```
 
-### MyObjectBuilderSerializerKeen.DeserializeXML (рабочий)
+### MyObjectBuilderSerializerKeen.DeserializeXML (working)
 
 ```csharp
-// Единственный работающий метод для десериализации bp.sbc:
+// The only working method for deserializing bp.sbc:
 using (var stream = File.OpenRead(bpFile))
 {
     VRage.ObjectBuilders.Private.MyObjectBuilderSerializerKeen.DeserializeXML(
-        stream,                                 // Stream (не path!)
-        out MyObjectBuilder_Base obj,           // out — результат
-        typeof(MyObjectBuilder_Definitions));    // Type — тип корня
+        stream,                                 // Stream (not path!)
+        out MyObjectBuilder_Base obj,           // out — result
+        typeof(MyObjectBuilder_Definitions));    // Type — root type
     var definitions = obj as MyObjectBuilder_Definitions;
 }
 ```
 
-> `MyObjectBuilderSerializerKeen` лежит в `VRage.ObjectBuilders.Private`.
-> Если класс окажется `internal` в будущих версиях игры — использовать
-> рефлексию или публичный `MyObjectBuilderSerializer.DeserializeXML`
-> (проверять сигнатуру в новых версиях).
+> `MyObjectBuilderSerializerKeen` lives in `VRage.ObjectBuilders.Private`.
+> If the class becomes `internal` in future game versions — use
+> reflection or the public `MyObjectBuilderSerializer.DeserializeXML`
+> (check the signature in new versions).
 
 ### MyObjectBuilder_Definitions
 
-Класс для десериализации SBC файлов. Содержит все типы определений:
+Class for deserializing SBC files. Contains all definition types:
 
 ```csharp
 // VRage.Game.MyObjectBuilder_Definitions
@@ -259,13 +259,13 @@ public class MyObjectBuilder_Definitions
     public MyObjectBuilder_ShipBlueprintDefinition[] ShipBlueprints;
     public MyObjectBuilder_PrefabDefinition[] Prefabs;
     public MyObjectBuilder_BlueprintClassDefinition[] BlueprintClasses;
-    // ... и другие
+    // ... and others
 }
 ```
 
 ### MyObjectBuilder_ShipBlueprintDefinition
 
-Определение чертежа (bp.sbc):
+Blueprint definition (bp.sbc):
 
 ```csharp
 public class MyObjectBuilder_ShipBlueprintDefinition
@@ -274,13 +274,13 @@ public class MyObjectBuilder_ShipBlueprintDefinition
     public ulong OwnerSteamId;
     public ulong WorkshopId;
     public bool Enabled;
-    public MyObjectBuilder_CubeGrid[] CubeGrids;  // Гриды в чертеже
+    public MyObjectBuilder_CubeGrid[] CubeGrids;  // Grids in the blueprint
 }
 ```
 
 ### MyObjectBuilder_CubeGrid
 
-Object builder для грида:
+Object builder for a grid:
 
 ```csharp
 public class MyObjectBuilder_CubeGrid : MyObjectBuilder_EntityBase
@@ -288,7 +288,7 @@ public class MyObjectBuilder_CubeGrid : MyObjectBuilder_EntityBase
     public string SubtypeName;
     public long EntityId;
     public MyPositionAndOrientation? PositionAndOrientation;
-    public MyCubeSize GridSizeEnum;      // Small или Large
+    public MyCubeSize GridSizeEnum;      // Small or Large
     public MyObjectBuilder_CubeBlock[] CubeBlocks;
     // ...
 }
@@ -296,79 +296,79 @@ public class MyObjectBuilder_CubeGrid : MyObjectBuilder_EntityBase
 
 ---
 
-## 7. MySession — Игровая сессия
+## 7. MySession — Game Session
 
 ```csharp
-// Текущая сессия
+// Current session
 MySession.Static           // MySession
-MySession.Static.Ready     // bool — мир полностью загружен
-MySession.Static.Name      // string — имя мира
+MySession.Static.Ready     // bool — world fully loaded
+MySession.Static.Name      // string — world name
 ```
 
 ---
 
-## 8. MyEntityIdentifier — Управление ID сущностей
+## 8. MyEntityIdentifier — Entity ID Management
 
 ```csharp
-// Ремап коллекции
+// Remap a collection
 MyEntityIdentifier.RemapObjectBuilderCollection(IEnumerable<MyObjectBuilder_EntityBase>)
 
-// Выделение нового ID
+// Allocate a new ID
 MyEntityIdentifier.AllocateId(ID_OBJECT_TYPE, ID_ALLOCATION_METHOD)
 
-// Зарегистрировать ID как используемый
+// Register an ID as used
 MyEntityIdentifier.MarkIdUsed(long id)
 ```
 
 ---
 
-## 9. MyCubeGrid — Интерфейс грида
+## 9. MyCubeGrid — Grid Interface
 
 ```csharp
-// Основные свойства через IMyCubeGrid:
+// Key properties via IMyCubeGrid:
 grid.EntityId                // long
 grid.DisplayName             // string
 grid.PositionComp.GetPosition() // Vector3D
-grid.GridSize                // float (размер ячейки)
+grid.GridSize                // float (cell size)
 grid.IsStatic                // bool
 grid.BlocksCount             // int
-grid.GridSystems             // Доступ к системам грида
+grid.GridSystems             // Access to grid systems
 
-// Получить все блоки на гриде
+// Get all blocks on the grid
 List<IMySlimBlock> blocks = new List<IMySlimBlock>();
 grid.GetBlocks(blocks);
 
-// Получить блоки определённого типа
+// Get blocks of a specific type
 List<IMyTerminalBlock> terminals = new List<IMyTerminalBlock>();
 grid.GetBlocksOfType<IMyShipConnector>(terminals);
 ```
 
 ---
 
-## 10. IMyGridTerminalSystem — Терминальная сеть
+## 10. IMyGridTerminalSystem — Terminal Network
 
-Доступ ко всем блокам, связанным через коннекторы, роторы, пистоны:
+Access to all blocks connected via connectors, rotors, pistons:
 
 ```csharp
 IMyGridTerminalSystem terminalSys = MyAPIGateway.TerminalActionsHelper.GetTerminalSystemForGrid(grid);
 
-// Все блоки в терминальной сети
+// All blocks in the terminal network
 List<IMyTerminalBlock> blocks = new List<IMyTerminalBlock>();
 terminalSys.GetBlocks(blocks);
 
-// Блоки по типу
+// Blocks by type
 terminalSys.GetBlocksOfType<IMyShipConnector>(blocks, filter);
 
-// Поиск по имени
+// Search by name
 terminalSys.SearchBlocksOfName("Connector", blocks);
 ```
 
 ---
 
-## 11. Спавн из локального чертежа (рабочий алгоритм)
+## 11. Spawning from a Local Blueprint (working algorithm)
 
 ```csharp
-// 1. Загрузить bp.sbc через DeserializeXML (Private namespace!)
+// 1. Load bp.sbc via DeserializeXML (Private namespace!)
 MyObjectBuilder_Definitions definitions = null;
 using (var stream = File.OpenRead(bpFilePath))
 {
@@ -377,10 +377,10 @@ using (var stream = File.OpenRead(bpFilePath))
     definitions = obj as MyObjectBuilder_Definitions;
 }
 
-// 2. Извлечь ShipBlueprint
+// 2. Extract ShipBlueprint
 var shipBp = definitions.ShipBlueprints[0];
 
-// 3. Извлечь гриды
+// 3. Extract grids
 var grids = new List<MyObjectBuilder_CubeGrid>();
 foreach (var grid in shipBp.CubeGrids)
 {
@@ -388,30 +388,30 @@ foreach (var grid in shipBp.CubeGrids)
         grids.Add(cubeGrid);
 }
 
-// 4. Ремап EntityId (публичный IMyEntities)
+// 4. Remap EntityId (public IMyEntities)
 MyAPIGateway.Entities.RemapObjectBuilderCollection(grids);
 
-// 5. Установить позицию спавна
+// 5. Set spawn position
 MatrixD spawnMatrix = MatrixD.CreateWorld(spawnPos, Vector3D.Forward, Vector3D.Up);
 gridBuilder.PositionAndOrientation = new MyPositionAndOrientation(spawnMatrix);
 
-// 6. Создать и добавить в мир (публичный IMyEntities)
-// ⚠️ Это даёт фантомный грид — визуал есть, физики/инициализации нет
-// Подробнее: см. Фантомный грид.md
+// 6. Create and add to world (public IMyEntities)
+// ⚠️ This produces a phantom grid — visuals are there, physics/initialization is not
+// See: Phantom Grid.md for details
 IMyEntity entity = MyAPIGateway.Entities.CreateFromObjectBuilderAndAdd(gridBuilder);
 ```
 
 ---
 
-## 12. Запуск игры с загрузкой мира
+## 12. Launching the Game with a World Load
 
 ```batch
-SpaceEngineersLauncher.exe -world "Имя Мира"
+SpaceEngineersLauncher.exe -world "World Name"
 ```
 
-Имя мира должно совпадать с именем папки в:
+The world name must match the folder name in:
 `%APPDATA%\SpaceEngineers\Saves\<steamid>\<WorldName>\`
 
-Например: `-world "Empty World 2026-07-14 21-40"`
+Example: `-world "Empty World 2026-07-14 21-40"`
 
 ---
