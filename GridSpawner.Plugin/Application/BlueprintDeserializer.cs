@@ -9,6 +9,8 @@ namespace GridSpawner.Plugin.Application
 {
     internal static class BlueprintDeserializer
     {
+        private static readonly object _serializeLock = new();
+
         public static List<MyObjectBuilder_CubeGrid> Deserialize(string bpFile,
             AppConfig config, out string error)
         {
@@ -17,7 +19,17 @@ namespace GridSpawner.Plugin.Application
             if (!ValidateFile(bpFile, config, out error))
                 return null;
 
-            var definitions = DeserializeXml(bpFile);
+            MyObjectBuilder_Definitions definitions;
+            try
+            {
+                definitions = DeserializeXml(bpFile);
+            }
+            catch (Exception ex)
+            {
+                error = $"Failed to parse blueprint XML: {ex.Message}";
+                return null;
+            }
+
             if (definitions == null)
             {
                 error = "Failed to deserialize blueprint XML";
@@ -51,10 +63,13 @@ namespace GridSpawner.Plugin.Application
 
         private static MyObjectBuilder_Definitions DeserializeXml(string bpFile)
         {
-            using var stream = File.OpenRead(bpFile);
-            VRage.ObjectBuilders.Private.MyObjectBuilderSerializerKeen.DeserializeXML(
-                stream, out MyObjectBuilder_Base obj, typeof(MyObjectBuilder_Definitions));
-            return obj as MyObjectBuilder_Definitions;
+            lock (_serializeLock)
+            {
+                using var stream = File.OpenRead(bpFile);
+                VRage.ObjectBuilders.Private.MyObjectBuilderSerializerKeen.DeserializeXML(
+                    stream, out MyObjectBuilder_Base obj, typeof(MyObjectBuilder_Definitions));
+                return obj as MyObjectBuilder_Definitions;
+            }
         }
 
         private static List<MyObjectBuilder_CubeGrid> ExtractGridBuilders(
