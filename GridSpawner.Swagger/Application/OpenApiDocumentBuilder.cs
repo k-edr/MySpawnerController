@@ -100,6 +100,15 @@ public static class OpenApiDocumentBuilder
 
             ["/api/v1/grids/{id}/blocks/{x}/{y}/{z}/action"] = BlockActionOp(repo),
 
+            ["/api/v1/grids/{id}/blocks/{x}/{y}/{z}/program"] = StringBodyOp(OperationType.Put,
+                "Upload code to programmable block", "setProgramCode", "code"),
+
+            ["/api/v1/grids/{id}/blocks/{x}/{y}/{z}/text"] = StringBodyOp(OperationType.Put,
+                "Write text to LCD panel", "writeTextPanel", "text"),
+
+            ["/api/v1/grids/{id}/blocks/{x}/{y}/{z}/run"] = StringBodyOp(OperationType.Post,
+                "Run programmable block with argument", "runProgram", "argument"),
+
             ["/api/v1/grids/{id}/blocks/{x}/{y}/{z}/properties/{propId}"] = BlockPropertyOp(repo)
         };
     }
@@ -343,4 +352,41 @@ public static class OpenApiDocumentBuilder
             Schema = new OpenApiSchema { Type = "integer", Format = "int32" }
         }
     };
+
+    private static OpenApiPathItem StringBodyOp(OperationType op, string summary,
+        string operationId, string fieldName)
+    {
+        return new OpenApiPathItem
+        {
+            Operations = new Dictionary<OperationType, OpenApiOperation>
+            {
+                [op] = new OpenApiOperation
+                {
+                    Summary = summary,
+                    OperationId = operationId,
+                    Parameters = GridBlockPathParams(),
+                    RequestBody = new OpenApiRequestBody
+                    {
+                        Required = true,
+                        Content = { ["application/json"] = new OpenApiMediaType
+                        {
+                            Schema = new OpenApiSchema
+                            {
+                                Type = "object",
+                                Properties = new Dictionary<string, OpenApiSchema>
+                                {
+                                    [fieldName] = new() { Type = "string" }
+                                }
+                            }
+                        }}
+                    },
+                    Responses = new OpenApiResponses
+                    {
+                        ["200"] = new OpenApiResponse { Description = "OK" },
+                        ["404"] = Error("Block not found")
+                    }
+                }
+            }
+        };
+    }
 }

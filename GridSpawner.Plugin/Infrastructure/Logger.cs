@@ -7,6 +7,7 @@ namespace GridSpawner.Plugin.Infrastructure
     public static class Logger
     {
         private static readonly string LogFilePath = AppDefaults.DefaultLogFile;
+        private static readonly object _lock = new();
         private static bool _initialized;
 
         public static void Init()
@@ -36,8 +37,11 @@ namespace GridSpawner.Plugin.Infrastructure
         {
             string line = $"[{DateTime.Now:HH:mm:ss}] [{level}] {message}";
 
-            try { File.AppendAllText(LogFilePath, line + Environment.NewLine); }
-            catch { }
+            lock (_lock)
+            {
+                try { File.AppendAllText(LogFilePath, line + Environment.NewLine); }
+                catch { }
+            }
 
             try { VRage.Utils.MyLog.Default?.WriteLine($"[GridSpawner.Plugin] {line}"); }
             catch { }

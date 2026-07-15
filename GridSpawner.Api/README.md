@@ -42,11 +42,12 @@ Infrastructure → Application → GridSpawner.Shared
 
 ```json
 {
+  "apiScheme": "http",
+  "apiHost": "localhost",
   "apiPort": 9997,
   "swaggerPort": 9998,
   "swaggerCorsOrigin": "http://localhost:9998",
-  "blueprintsFolder": null,
-  "apiKey": null,
+  "blueprintsFolder": "%APPDATA%\\SpaceEngineers\\Blueprints\\local",
   "maxBlueprintFileSizeBytes": 52428800,
   "maxGridsPerBlueprint": 50
 }

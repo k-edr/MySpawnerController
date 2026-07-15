@@ -43,13 +43,21 @@ public sealed class SpawnService : ISpawnService, IDisposable
     public IReadOnlyList<GridDto> Spawn(string blueprintName, string blueprintPath,
         Vector3D position, string displayName)
     {
-        string bp = blueprintPath;
+        // ── Deserialize on API thread (CPU + I/O, no game state) ──
+        var gridBuilders = BlueprintDeserializer.Deserialize(blueprintPath,
+            _config, out string error);
+        if (gridBuilders == null)
+        {
+            Logger.Error($"Spawn: {blueprintName} — {error}");
+            return null;
+        }
+
+        // ── World creation on main thread ──
+        var task = new MainThreadTask<List<GridDto>>();
         string bpName = blueprintName;
         string dispName = displayName;
         Vector3D off = position;
-
-        var task = new MainThreadTask<List<GridDto>>();
-        task.Process = () => task.Result = DoSpawn(bp, off, bpName, dispName);
+        task.Process = () => task.Result = DoSpawn(gridBuilders, off, bpName, dispName);
         _queue.Enqueue(task);
         if (!task.Done.Wait(_timeout))
         {
@@ -75,9 +83,32 @@ public sealed class SpawnService : ISpawnService, IDisposable
         return list;
     }
 
-    public IReadOnlyList<GridListItem> ListGrids() => _tracker.ListGrids();
+    public IReadOnlyList<GridListItem> ListGrids()
+    {
+        var task = new MainThreadTask<List<GridListItem>>();
+        task.Process = () => task.Result = _tracker.ListGrids();
+        _queue.Enqueue(task);
+        if (!task.Done.Wait(_timeout))
+        {
+            Logger.Error("ListGrids timeout");
+            return new List<GridListItem>();
+        }
+        return task.Result;
+    }
 
-    public GridDto GetGrid(long id) => _tracker.GetGrid(id);
+    public GridDto GetGrid(long id)
+    {
+        var task = new MainThreadTask<GridDto>();
+        long entityId = id;
+        task.Process = () => task.Result = _tracker.GetGrid(entityId);
+        _queue.Enqueue(task);
+        if (!task.Done.Wait(_timeout))
+        {
+            Logger.Error($"GetGrid timeout: {entityId}");
+            return null;
+        }
+        return task.Result;
+    }
 
     public bool DeleteGrid(long id)
     {
@@ -257,27 +288,27 @@ public sealed class SpawnService : ISpawnService, IDisposable
 
     public void Dispose()
     {
-        // Drain any remaining tasks and release their OS handles
-        while (_queue.TryDequeue(out var task))
+        // Wake all waiting threads before disposing — avoids ObjectDisposedException
+        var tasks = new List<MainThreadTask>();
+        while (_queue.TryDequeue(out var t))
+            tasks.Add(t);
+
+        foreach (var t in tasks)
         {
-            try { task.Done.Set(); } catch { }
-            try { task.Dispose(); } catch { }
+            try { t.Done.Set(); } catch { }
+        }
+        foreach (var t in tasks)
+        {
+            try { t.Dispose(); } catch { }
         }
     }
 
     // ── Private: game-thread implementations ─────────────────
 
-    private List<GridDto> DoSpawn(string bpFile, Vector3D offset,
-        string bpName, string dispName)
+    private List<GridDto> DoSpawn(List<MyObjectBuilder_CubeGrid> gridBuilders,
+        Vector3D offset, string bpName, string dispName)
     {
         Logger.Info($"Spawning: {bpName} @ X:{offset.X} Y:{offset.Y} Z:{offset.Z}");
-
-        var gridBuilders = BlueprintDeserializer.Deserialize(bpFile, _config, out string error);
-        if (gridBuilders == null)
-        {
-            Logger.Error($"Deserialize failed: {bpName} — {error}");
-            return null;
-        }
 
         MyAPIGateway.Entities.RemapObjectBuilderCollection(gridBuilders);
 
@@ -291,8 +322,6 @@ public sealed class SpawnService : ISpawnService, IDisposable
 
             if (ent is MyCubeGrid grid)
             {
-                PostSpawnFixup.Apply(grid);
-
                 if (!string.IsNullOrEmpty(displayName))
                 {
                     grid.DisplayName = displayName;

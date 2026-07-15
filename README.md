@@ -60,11 +60,12 @@ Created automatically on first plugin start:
 
 ```json
 {
+  "apiScheme": "http",
+  "apiHost": "localhost",
   "apiPort": 9997,
   "swaggerPort": 9998,
   "swaggerCorsOrigin": "http://localhost:9998",
-  "blueprintsFolder": null,
-  "apiKey": null,
+  "blueprintsFolder": "%APPDATA%\\SpaceEngineers\\Blueprints\\local",
   "maxBlueprintFileSizeBytes": 52428800,
   "maxGridsPerBlueprint": 50
 }
@@ -72,11 +73,12 @@ Created automatically on first plugin start:
 
 | Field | Description |
 |-------|-------------|
+| `apiScheme` | `http` or `https` |
+| `apiHost` | Listener host (`localhost` for local, `+` for all interfaces — requires admin) |
 | `apiPort` | JSON API port |
 | `swaggerPort` | Swagger UI port |
-| `swaggerCorsOrigin` | CORS origin (change if host is not localhost) |
-| `blueprintsFolder` | Override blueprints folder (`null` = `%APPDATA%\SpaceEngineers\Blueprints\local`) |
-| `apiKey` | API key for protected endpoints (`null` = no auth) |
+| `swaggerCorsOrigin` | CORS origin for browser requests |
+| `blueprintsFolder` | Override blueprints folder |
 | `maxBlueprintFileSizeBytes` | Max `.sbc` file size (default 50 MB) |
 | `maxGridsPerBlueprint` | Max grids allowed in a single blueprint |
 

@@ -258,18 +258,20 @@ internal static class TerminalBlockService
             var fat = slim?.FatBlock;
             if (fat == null) return false;
 
-            if (!(fat is Sandbox.ModAPI.Ingame.IMyProgrammableBlock))
+            // Preferred: official ModAPI interface
+            if (fat is Sandbox.ModAPI.IMyProgrammableBlock modApiPb)
             {
-                Logger.Warn($"SetProgramCode: block at {position} is not a programmable block");
-                return false;
+                modApiPb.ProgramData = code;
+                Logger.Info($"PB code set via ModAPI ({code.Length} chars)");
+                return true;
             }
 
+            // Fallback: reflection-based for non-standard PB implementations
             var type = fat.GetType();
             var flags = System.Reflection.BindingFlags.Instance
                 | System.Reflection.BindingFlags.Public
                 | System.Reflection.BindingFlags.NonPublic;
 
-            // Method names that might set PB code
             var candidates = new[] {
                 "SetProgram", "SendChangeProgram", "UploadProgram",
                 "SetProgramCode", "SendProgram", "WriteProgram",
@@ -287,7 +289,6 @@ internal static class TerminalBlockService
                 }
             }
 
-            // Fallback: try property setter for any string property with "Program" in name
             foreach (var prop in type.GetProperties(flags))
             {
                 if (prop.PropertyType == typeof(string)
@@ -300,7 +301,6 @@ internal static class TerminalBlockService
                 }
             }
 
-            // Last resort: log all string-accepting methods for diagnostics
             var allMethods = new System.Text.StringBuilder();
             foreach (var m in type.GetMethods(flags))
             {
@@ -323,13 +323,27 @@ internal static class TerminalBlockService
         try
         {
             var slim = grid.GetCubeBlock(position);
-            if (slim?.FatBlock is Sandbox.ModAPI.Ingame.IMyTextPanel panel)
+            var fat = slim?.FatBlock;
+            if (fat == null) return false;
+
+            // Preferred: IMyTextPanel (dedicated LCD blocks)
+            if (fat is Sandbox.ModAPI.Ingame.IMyTextPanel panel)
             {
                 panel.WriteText(text);
                 Logger.Info($"Text written to panel at {position} ({text.Length} chars)");
                 return true;
             }
-            Logger.Warn($"WriteTextPanel: block at {position} is not a text panel");
+
+            // Fallback: IMyTextSurfaceProvider (cockpits, PBs, cryo, buttons, etc.)
+            if (fat is Sandbox.ModAPI.Ingame.IMyTextSurfaceProvider provider)
+            {
+                var surface = provider.GetSurface(0);
+                surface?.WriteText(text);
+                Logger.Info($"Text written to surface[0] at {position} ({text.Length} chars)");
+                return true;
+            }
+
+            Logger.Warn($"WriteTextPanel: block at {position} has no text surface");
             return false;
         }
         catch (Exception ex)
