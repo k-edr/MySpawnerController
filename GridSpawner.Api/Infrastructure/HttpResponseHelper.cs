@@ -23,6 +23,11 @@ public static class HttpResponseHelper
     public static Action<string> Log { get; set; } = _ => { };
 
     /// <summary>
+    /// CORS origin for Access-Control-Allow-Origin header. Set at startup.
+    /// </summary>
+    public static string CorsOrigin { get; set; }
+
+    /// <summary>
     /// Deserialize request body. Returns null on failure and logs the error.
     /// </summary>
     public static T ReadBody<T>(HttpListenerContext ctx) where T : class
@@ -54,9 +59,10 @@ public static class HttpResponseHelper
     {
         try
         {
-            if (!string.IsNullOrEmpty(corsOrigin))
+            string origin = corsOrigin ?? CorsOrigin;
+            if (!string.IsNullOrEmpty(origin))
             {
-                ctx.Response.AddHeader("Access-Control-Allow-Origin", corsOrigin);
+                ctx.Response.AddHeader("Access-Control-Allow-Origin", origin);
                 ctx.Response.AddHeader("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS");
                 ctx.Response.AddHeader("Access-Control-Allow-Headers", "Content-Type");
             }

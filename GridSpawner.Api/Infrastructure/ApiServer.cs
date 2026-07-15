@@ -35,6 +35,7 @@ public sealed class ApiServer : IDisposable
     public void Start()
     {
         HttpResponseHelper.Log = _log;
+        HttpResponseHelper.CorsOrigin = _config.SwaggerCorsOrigin;
 
         try
         {
