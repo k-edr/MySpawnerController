@@ -9,7 +9,7 @@ $apiHealth = "$apiUrl/api/v1/health"
 $apiSpawn  = "$apiUrl/api/v1/spawn-tests"
 
 Write-Host "============================================" -ForegroundColor Cyan
-Write-Host " GridSpawner — Build, Run, Test" -ForegroundColor Cyan
+Write-Host " GridSpawner -- Build, Run, Test" -ForegroundColor Cyan
 Write-Host "============================================" -ForegroundColor Cyan
 Write-Host ""
 
@@ -35,7 +35,7 @@ if (Test-Path $swagger) {
     Start-Process -FilePath $swagger
     Write-Host "  Swagger: http://localhost:9998/swagger" -ForegroundColor Cyan
 } else {
-    Write-Host "  Swagger exe not found — build first." -ForegroundColor DarkYellow
+    Write-Host "  Swagger exe not found -- build first." -ForegroundColor DarkYellow
 }
 Write-Host ""
 
