@@ -84,8 +84,11 @@
   <ItemGroup>
     <Compile Include="BlueprintDeserializer.cs" />
     <Compile Include="DeleteTask.cs" />
+    <Compile Include="FatBlockInfoExtractor.cs" />
     <Compile Include="GridDtoMapper.cs" />
+    <Compile Include="IBlockInfoExtractor.cs" />
     <Compile Include="PostSpawnFixup.cs" />
+    <Compile Include="SlimBlockInfoExtractor.cs" />
     <Compile Include="SpawnTask.cs" />
     <Compile Include="Logger.cs" />
     <Compile Include="Plugin.cs" />

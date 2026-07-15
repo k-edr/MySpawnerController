@@ -8,9 +8,13 @@ namespace GridSpawner.Plugin
 {
     /// <summary>
     /// Maps <see cref="MyCubeGrid"/> entities to <see cref="GridDto"/> transport objects.
+    /// Uses <see cref="IBlockInfoExtractor"/> strategy for fat vs slim blocks.
     /// </summary>
     internal static class GridDtoMapper
     {
+        private static readonly IBlockInfoExtractor FatExtractor = new FatBlockInfoExtractor();
+        private static readonly IBlockInfoExtractor SlimExtractor = new SlimBlockInfoExtractor();
+
         public static GridDto ToDto(MyCubeGrid grid)
         {
             var dto = new GridDto { Id = grid.EntityId, Name = grid.DisplayName };
@@ -56,37 +60,19 @@ namespace GridSpawner.Plugin
 
         private static BlockDto MapBlock(IMySlimBlock slim)
         {
-            var b = new BlockDto
+            var extractor = slim.FatBlock != null ? FatExtractor : SlimExtractor;
+
+            return new BlockDto
             {
                 GridPosition = new Vector3IDto
                 {
                     X = slim.Position.X,
                     Y = slim.Position.Y,
                     Z = slim.Position.Z
-                }
+                },
+                Name = extractor.GetName(slim),
+                Type = extractor.GetTypeName(slim)
             };
-
-            if (slim.FatBlock != null)
-            {
-                var fat = slim.FatBlock;
-                b.Name = fat.DisplayNameText ?? fat.DefinitionDisplayNameText;
-                try { b.Type = fat.BlockDefinition.ToString(); }
-                catch { b.Type = fat.GetType().Name; }
-            }
-            else
-            {
-                var def = slim.BlockDefinition;
-                b.Name = def?.DisplayNameText ?? "Armor";
-                if (def != null)
-                {
-                    var id = def.Id;
-                    b.Type = !string.IsNullOrEmpty(id.SubtypeName)
-                        ? id.SubtypeName : "CubeBlock";
-                }
-                else b.Type = "CubeBlock";
-            }
-
-            return b;
         }
     }
 }
