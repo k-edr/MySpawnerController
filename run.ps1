@@ -1,6 +1,7 @@
 $ErrorActionPreference = "Stop"
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 
+# -- Build-time paths (build-config.json, fallback to default) --
 $buildConfigPath = Join-Path $scriptDir "build-config.json"
 $seBin64 = "D:\SteamLibrary\steamapps\common\SpaceEngineers\Bin64"
 if (Test-Path $buildConfigPath) {
@@ -9,9 +10,22 @@ if (Test-Path $buildConfigPath) {
         if ($buildCfg.seBin64) { $seBin64 = $buildCfg.seBin64 }
     } catch { }
 }
+
+# -- Runtime config (GridSpawner.json, fallback to defaults) --
+$runtimeCfgPath = Join-Path $env:APPDATA "SpaceEngineers\GridSpawner.json"
+$apiPort = 9997
+$swaggerPort = 9998
+try {
+    if (Test-Path $runtimeCfgPath) {
+        $rtCfg = Get-Content $runtimeCfgPath -Raw | ConvertFrom-Json
+        if ($rtCfg.apiPort)    { $apiPort    = $rtCfg.apiPort }
+        if ($rtCfg.swaggerPort) { $swaggerPort = $rtCfg.swaggerPort }
+    }
+} catch { }
+
 $launcher  = Join-Path $seBin64 "SpaceEngineersLauncher.exe"
 $swagger   = Join-Path $seBin64 "Plugins\Swagger\GridSpawner.Swagger.exe"
-$apiUrl    = "http://localhost:9997"
+$apiUrl    = "http://localhost:$apiPort"
 $apiHealth = "$apiUrl/api/v1/health"
 $apiSpawn  = "$apiUrl/api/v1/spawn-tests"
 
@@ -20,13 +34,13 @@ Write-Host " GridSpawner -- Build, Run, Test" -ForegroundColor Cyan
 Write-Host "============================================" -ForegroundColor Cyan
 Write-Host ""
 
-# ── Step 1: Build ──────────────────────────────────────
+# -- Step 1: Build --------------------------------------------------
 Write-Host "[1/5] Building all projects..." -ForegroundColor Yellow
 & "$scriptDir\build.ps1"
 if ($LASTEXITCODE -ne 0) { throw "Build failed" }
 Write-Host ""
 
-# ── Step 2: Kill old + Launch game ─────────────────────
+# -- Step 2: Kill old + Launch game ---------------------------------
 Write-Host "[2/5] Launching game..." -ForegroundColor Yellow
 Stop-Process -Name SpaceEngineers -Force -ErrorAction SilentlyContinue
 Stop-Process -Name SpaceEngineersLauncher -Force -ErrorAction SilentlyContinue
@@ -36,17 +50,17 @@ if (-not (Test-Path $launcher)) { Write-Error "Launcher not found: $launcher"; e
 Start-Process -FilePath $launcher
 Write-Host "  Game launched (AutoWorldLoader will load the world)." -ForegroundColor Green
 
-# ── Step 3: Launch Swagger ─────────────────────────────
+# -- Step 3: Launch Swagger -----------------------------------------
 Write-Host "[3/5] Launching Swagger UI..." -ForegroundColor Yellow
 if (Test-Path $swagger) {
     Start-Process -FilePath $swagger
-    Write-Host "  Swagger: http://localhost:9998/swagger" -ForegroundColor Cyan
+    Write-Host "  Swagger: http://localhost:$swaggerPort/swagger" -ForegroundColor Cyan
 } else {
     Write-Host "  Swagger exe not found -- build first." -ForegroundColor DarkYellow
 }
 Write-Host ""
 
-# ── Step 4: Wait for world ─────────────────────────────
+# -- Step 4: Wait for world -----------------------------------------
 Write-Host "[4/5] Waiting for world (polling $apiHealth)..." -ForegroundColor Yellow
 $ready = $false
 for ($i = 0; $i -lt 90; $i++) {
@@ -67,7 +81,7 @@ if (-not $ready) {
 Write-Host "  World loaded!" -ForegroundColor Green
 Write-Host ""
 
-# ── Step 5: Spawn test grids ───────────────────────────
+# -- Step 5: Spawn test grids ---------------------------------------
 Write-Host "[5/5] Spawning test grids..." -ForegroundColor Yellow
 try {
     $spawn = Invoke-WebRequest -UseBasicParsing -Method POST -TimeoutSec 30 -Uri $apiSpawn
@@ -83,5 +97,5 @@ try {
 Write-Host ""
 Write-Host "============================================" -ForegroundColor Cyan
 Write-Host "  Game API  : $apiUrl" -ForegroundColor Cyan
-Write-Host "  Swagger   : http://localhost:9998/swagger" -ForegroundColor Cyan
+Write-Host "  Swagger   : http://localhost:$swaggerPort/swagger" -ForegroundColor Cyan
 Write-Host "============================================" -ForegroundColor Cyan
