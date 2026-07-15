@@ -18,9 +18,9 @@ Write-Host "[2/5] Launching game..." -ForegroundColor Yellow
 & cmd /c "taskkill /f /im SpaceEngineersLauncher.exe 2>nul"
 Start-Sleep -Seconds 2
 
-$seBin64 = "D:\SteamLibrary\steamapps\common\SpaceEngineers\Bin64"
-if (-not (Test-Path "$seBin64\SpaceEngineers.exe")) { Write-Error "SpaceEngineers.exe not found: $seBin64"; exit 1 }
-Start-Process -FilePath "$seBin64\SpaceEngineers.exe" -WorkingDirectory $seBin64 -ArgumentList '-world', 'Empty_World_In', '-skipintro'
+$launcher = "D:\SteamLibrary\steamapps\common\SpaceEngineers\Bin64\SpaceEngineersLauncher.exe"
+if (-not (Test-Path $launcher)) { Write-Error "Launcher not found: $launcher"; exit 1 }
+Start-Process -FilePath $launcher -ArgumentList '-world', 'Empty_World_In', '-skipintro'
 
 # 3. Launch Swagger in separate terminal
 Write-Host "[3/5] Launching Swagger UI..." -ForegroundColor Yellow
