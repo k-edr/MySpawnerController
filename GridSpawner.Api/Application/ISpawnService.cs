@@ -6,21 +6,50 @@ using VRageMath;
 namespace GridSpawner.Api.Application;
 
 /// <summary>
-/// Service contract for grid spawning and management.
+/// Service contract for grid spawning, management, and terminal block interaction.
 /// Implemented by the game plugin on the main thread.
 /// </summary>
 public interface ISpawnService
 {
-    List<GridDto> Spawn(string blueprintName, string blueprintPath,
+    IReadOnlyList<GridDto> Spawn(string blueprintName, string blueprintPath,
         Vector3D position, string displayName);
 
-    List<BlueprintInfo> ListBlueprints(string blueprintsFolder);
+    IReadOnlyList<BlueprintInfo> ListBlueprints(string blueprintsFolder);
 
-    List<GridListItem> ListGrids();
+    IReadOnlyList<GridListItem> ListGrids();
 
     GridDto GetGrid(long id);
 
     bool DeleteGrid(long id);
+
+    /// <summary>Delete all tracked grids. Returns IDs that were successfully removed.</summary>
+    IReadOnlyList<long> DeleteAllGrids();
+
+    // ── Terminal block interaction ──
+
+    /// <summary>Get all functional (FatBlock) blocks on a grid.</summary>
+    IReadOnlyList<TerminalBlockDto> GetGridBlocks(long gridId);
+
+    /// <summary>Get detailed info for a specific block including actions and properties.</summary>
+    TerminalBlockDto GetBlockDetail(long gridId, int x, int y, int z);
+
+    /// <summary>Execute a terminal action on a block.</summary>
+    bool ExecuteBlockAction(long gridId, int x, int y, int z, string actionId);
+
+    /// <summary>Get a specific property value from a block.</summary>
+    string GetBlockProperty(long gridId, int x, int y, int z, string propertyId);
+
+    /// <summary>Set a property value on a block.</summary>
+    bool SetBlockProperty(long gridId, int x, int y, int z, string propertyId, string value);
+
+    /// <summary>Set the program code of a programmable block.</summary>
+    bool SetProgramCode(long gridId, int x, int y, int z, string code);
+
+    /// <summary>Write text to a text panel / LCD.</summary>
+    bool WriteTextPanel(long gridId, int x, int y, int z, string text);
+
+    /// <summary>Run a programmable block with an argument.</summary>
+    bool RunProgram(long gridId, int x, int y, int z, string argument);
 
     bool IsReady { get; }
 }

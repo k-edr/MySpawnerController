@@ -12,7 +12,7 @@ namespace GridSpawner.Swagger.Application;
 /// </summary>
 public static class OpenApiDocumentBuilder
 {
-    public static OpenApiDocument Build(int gamePort)
+    public static OpenApiDocument Build(AppConfig config)
     {
         var jsonOpts = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
         var schemaGen = new SchemaGenerator(
@@ -28,9 +28,9 @@ public static class OpenApiDocumentBuilder
             {
                 Title = "GridSpawner.Plugin API",
                 Version = "1.0.0",
-                Description = $"HTTP API for spawning Space Engineers grids from local blueprints. Game API runs on port {gamePort}."
+                Description = $"HTTP API for spawning Space Engineers grids from local blueprints. Game API runs on port {config.ApiPort}."
             },
-            Servers = [new OpenApiServer { Url = $"http://localhost:{gamePort}" }],
+            Servers = [new OpenApiServer { Url = $"{config.ApiScheme}://{config.ApiHost}:{config.ApiPort}" }],
             Paths = BuildPaths(schemaRepo),
             Components = new OpenApiComponents { Schemas = schemaRepo.Schemas }
         };
@@ -49,6 +49,10 @@ public static class OpenApiDocumentBuilder
         generator.GenerateSchema(typeof(GridListItem), repo);
         generator.GenerateSchema(typeof(ErrorResponse), repo);
         generator.GenerateSchema(typeof(HealthResponse), repo);
+        generator.GenerateSchema(typeof(TerminalBlockDto), repo);
+        generator.GenerateSchema(typeof(BlockActionDto), repo);
+        generator.GenerateSchema(typeof(BlockPropertyDto), repo);
+        generator.GenerateSchema(typeof(BlockActionRequest), repo);
     }
 
     private static OpenApiPaths BuildPaths(SchemaRepository repo)
@@ -84,7 +88,19 @@ public static class OpenApiDocumentBuilder
             },
 
             ["/api/v1/spawn-tests"] = SimplePath(OperationType.Post,
-                "Spawn all 3 test grids", "spawnTests", Ref(nameof(SpawnResponse)))
+                "Spawn all 3 test grids", "spawnTests", Ref(nameof(SpawnResponse))),
+
+            // ── Terminal block interaction ──
+
+            ["/api/v1/grids/{id}/blocks"] = SimplePath(OperationType.Get,
+                "List functional blocks on a grid", "listGridBlocks",
+                ArrayOf(nameof(TerminalBlockDto))),
+
+            ["/api/v1/grids/{id}/blocks/{x}/{y}/{z}"] = BlockDetail(repo),
+
+            ["/api/v1/grids/{id}/blocks/{x}/{y}/{z}/action"] = BlockActionOp(repo),
+
+            ["/api/v1/grids/{id}/blocks/{x}/{y}/{z}/properties/{propId}"] = BlockPropertyOp(repo)
         };
     }
 
@@ -187,5 +203,144 @@ public static class OpenApiDocumentBuilder
     private static OpenApiSchema ArrayOf(string itemSchemaName) => new()
     {
         Type = "array", Items = Ref(itemSchemaName)
+    };
+
+    // ── Block operation builders ──────────────────────────
+
+    private static OpenApiPathItem BlockDetail(SchemaRepository repo)
+    {
+        var parameters = GridBlockPathParams();
+        return new OpenApiPathItem
+        {
+            Operations = new Dictionary<OperationType, OpenApiOperation>
+            {
+                [OperationType.Get] = new OpenApiOperation
+                {
+                    Summary = "Get block details with actions and properties",
+                    OperationId = "getBlockDetail",
+                    Parameters = parameters,
+                    Responses = new OpenApiResponses
+                    {
+                        ["200"] = Ok(Ref(nameof(TerminalBlockDto))),
+                        ["404"] = Error("Block not found")
+                    }
+                }
+            }
+        };
+    }
+
+    private static OpenApiPathItem BlockActionOp(SchemaRepository repo)
+    {
+        var parameters = GridBlockPathParams();
+        return new OpenApiPathItem
+        {
+            Operations = new Dictionary<OperationType, OpenApiOperation>
+            {
+                [OperationType.Post] = new OpenApiOperation
+                {
+                    Summary = "Execute a terminal action on a block",
+                    OperationId = "executeBlockAction",
+                    Parameters = parameters,
+                    RequestBody = new OpenApiRequestBody
+                    {
+                        Required = true,
+                        Content = { ["application/json"] = new OpenApiMediaType
+                            { Schema = Ref("BlockActionRequest") } }
+                    },
+                    Responses = new OpenApiResponses
+                    {
+                        ["200"] = new OpenApiResponse { Description = "Action executed" },
+                        ["404"] = Error("Block or action not found")
+                    }
+                }
+            }
+        };
+    }
+
+    private static OpenApiPathItem BlockPropertyOp(SchemaRepository repo)
+    {
+        var parameters = new List<OpenApiParameter>(GridBlockPathParams())
+        {
+            new OpenApiParameter
+            {
+                Name = "propId", In = ParameterLocation.Path, Required = true,
+                Schema = new OpenApiSchema { Type = "string" }
+            }
+        };
+        return new OpenApiPathItem
+        {
+            Operations = new Dictionary<OperationType, OpenApiOperation>
+            {
+                [OperationType.Get] = new OpenApiOperation
+                {
+                    Summary = "Get a property value from a block",
+                    OperationId = "getBlockProperty",
+                    Parameters = parameters,
+                    Responses = new OpenApiResponses
+                    {
+                        ["200"] = Ok(new OpenApiSchema
+                        {
+                            Type = "object",
+                            Properties = new Dictionary<string, OpenApiSchema>
+                            {
+                                ["propertyId"] = new() { Type = "string" },
+                                ["value"] = new() { Type = "string" }
+                            }
+                        }),
+                        ["404"] = Error("Property not found")
+                    }
+                },
+                [OperationType.Put] = new OpenApiOperation
+                {
+                    Summary = "Set a property value on a block",
+                    OperationId = "setBlockProperty",
+                    Parameters = parameters,
+                    RequestBody = new OpenApiRequestBody
+                    {
+                        Required = true,
+                        Content = { ["application/json"] = new OpenApiMediaType
+                        {
+                            Schema = new OpenApiSchema
+                            {
+                                Type = "object",
+                                Properties = new Dictionary<string, OpenApiSchema>
+                                {
+                                    ["value"] = new() { Type = "string" }
+                                }
+                            }
+                        }}
+                    },
+                    Responses = new OpenApiResponses
+                    {
+                        ["200"] = new OpenApiResponse { Description = "Property set" },
+                        ["404"] = Error("Block or property not found")
+                    }
+                }
+            }
+        };
+    }
+
+    private static List<OpenApiParameter> GridBlockPathParams() => new()
+    {
+        new OpenApiParameter
+        {
+            Name = "id", In = ParameterLocation.Path, Required = true,
+            Schema = new OpenApiSchema { Type = "integer", Format = "int64" }
+        },
+        new OpenApiParameter
+        {
+            Name = "x", In = ParameterLocation.Path, Required = true,
+            Schema = new OpenApiSchema { Type = "integer", Format = "int32" }
+        },
+        new OpenApiParameter
+        {
+            Name = "y", In = ParameterLocation.Path, Required = true,
+            Schema = new OpenApiSchema { Type = "integer", Format = "int32" }
+        },
+        new OpenApiParameter
+        {
+            Name = "z", In = ParameterLocation.Path, Required = true,
+            Schema = new OpenApiSchema { Type = "integer", Format = "int32" }
+        }
     };
 }

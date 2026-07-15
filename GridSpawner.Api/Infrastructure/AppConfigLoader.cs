@@ -2,12 +2,11 @@ using System;
 using System.IO;
 using System.Text.Json;
 using GridSpawner.Shared.Configuration;
-using GridSpawner.Shared.Models;
 
 namespace GridSpawner.Api.Infrastructure;
 
 /// <summary>
-/// Loads/saves <see cref="AppConfig"/> from %APPDATA%\SpaceEngineers\GridSpawner.json.
+/// Loads/saves <see cref="AppConfig"/> from <see cref="AppDefaults.DefaultConfigFile"/>.
 /// </summary>
 public static class AppConfigLoader
 {
@@ -17,9 +16,7 @@ public static class AppConfigLoader
         WriteIndented = true
     };
 
-    public static string ConfigPath { get; } = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-        "SpaceEngineers", "GridSpawner.json");
+    public static string ConfigPath => AppDefaults.DefaultConfigFile;
 
     public static AppConfig Load()
     {
@@ -33,7 +30,6 @@ public static class AppConfigLoader
         }
         catch (Exception ex)
         {
-            // Corrupt config — fall back to defaults
             System.Diagnostics.Debug.WriteLine($"[AppConfig] Failed to load: {ex.Message}");
         }
 
@@ -57,7 +53,6 @@ public static class AppConfigLoader
         }
     }
 
-    /// <summary>Creates default config file if it doesn't exist.</summary>
     public static AppConfig LoadOrCreate()
     {
         if (!File.Exists(ConfigPath))

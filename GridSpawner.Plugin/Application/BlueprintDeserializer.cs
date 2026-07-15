@@ -2,51 +2,65 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using GridSpawner.Shared.Configuration;
-using GridSpawner.Shared.Models;
 using VRage.Game;
 using VRage.ObjectBuilders;
 
 namespace GridSpawner.Plugin.Application
 {
-    /// <summary>
-    /// Deserializes .sbc blueprint files into <see cref="MyObjectBuilder_CubeGrid"/> builders.
-    /// Enforces file size and grid count limits from <see cref="AppConfig"/>.
-    /// </summary>
     internal static class BlueprintDeserializer
     {
-        /// <summary>
-        /// Reads and deserializes a blueprint .sbc file.
-        /// Returns the list of cube grid object builders, or null on failure.
-        /// </summary>
-        /// <param name="bpFile">Path to the .sbc file.</param>
-        /// <param name="config">App config with size/count limits.</param>
-        /// <param name="error">Out: human-readable error message on failure.</param>
-        public static List<MyObjectBuilder_CubeGrid> Deserialize(string bpFile, AppConfig config, out string error)
+        public static List<MyObjectBuilder_CubeGrid> Deserialize(string bpFile,
+            AppConfig config, out string error)
         {
             error = null;
 
-            // ── File size check ──
+            if (!ValidateFile(bpFile, config, out error))
+                return null;
+
+            var definitions = DeserializeXml(bpFile);
+            if (definitions == null)
+            {
+                error = "Failed to deserialize blueprint XML";
+                return null;
+            }
+
+            var grids = ExtractGridBuilders(definitions, config, out error);
+            return grids;
+        }
+
+        private static bool ValidateFile(string bpFile, AppConfig config, out string error)
+        {
+            error = null;
             var fileInfo = new FileInfo(bpFile);
+
             if (!fileInfo.Exists)
             {
                 error = $"Blueprint file not found: {bpFile}";
-                return null;
+                return false;
             }
 
             if (fileInfo.Length > config.MaxBlueprintFileSizeBytes)
             {
-                error = $"Blueprint file too large: {fileInfo.Length:N0} bytes (max {config.MaxBlueprintFileSizeBytes:N0})";
-                return null;
+                error = $"Blueprint file too large: {fileInfo.Length:N0} bytes " +
+                        $"(max {config.MaxBlueprintFileSizeBytes:N0})";
+                return false;
             }
 
-            // ── Deserialize ──
-            MyObjectBuilder_Definitions definitions;
-            using (var stream = File.OpenRead(bpFile))
-            {
-                VRage.ObjectBuilders.Private.MyObjectBuilderSerializerKeen.DeserializeXML(
-                    stream, out MyObjectBuilder_Base obj, typeof(MyObjectBuilder_Definitions));
-                definitions = obj as MyObjectBuilder_Definitions;
-            }
+            return true;
+        }
+
+        private static MyObjectBuilder_Definitions DeserializeXml(string bpFile)
+        {
+            using var stream = File.OpenRead(bpFile);
+            VRage.ObjectBuilders.Private.MyObjectBuilderSerializerKeen.DeserializeXML(
+                stream, out MyObjectBuilder_Base obj, typeof(MyObjectBuilder_Definitions));
+            return obj as MyObjectBuilder_Definitions;
+        }
+
+        private static List<MyObjectBuilder_CubeGrid> ExtractGridBuilders(
+            MyObjectBuilder_Definitions definitions, AppConfig config, out string error)
+        {
+            error = null;
 
             if (definitions?.ShipBlueprints == null || definitions.ShipBlueprints.Length == 0)
             {
@@ -61,10 +75,10 @@ namespace GridSpawner.Plugin.Application
                 return null;
             }
 
-            // ── Grid count check ──
             if (shipBp.CubeGrids.Length > config.MaxGridsPerBlueprint)
             {
-                error = $"Too many grids in blueprint: {shipBp.CubeGrids.Length} (max {config.MaxGridsPerBlueprint})";
+                error = $"Too many grids in blueprint: {shipBp.CubeGrids.Length} " +
+                        $"(max {config.MaxGridsPerBlueprint})";
                 return null;
             }
 

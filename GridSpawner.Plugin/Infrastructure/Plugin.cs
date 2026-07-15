@@ -16,7 +16,7 @@ namespace GridSpawner.Plugin.Infrastructure
         public void Init(object gameInstance)
         {
             Logger.Init();
-            Logger.Info("Plugin loaded. Game API: http://localhost:9997 | Swagger: http://localhost:9998/swagger (separate process)");
+            Logger.Info("Plugin loaded. API starts after world load.");
         }
 
         public void Update() { }

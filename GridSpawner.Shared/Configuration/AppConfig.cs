@@ -3,32 +3,34 @@ using System.Text.Json.Serialization;
 namespace GridSpawner.Shared.Configuration;
 
 /// <summary>
-/// Application configuration stored in %APPDATA%\SpaceEngineers\GridSpawner.json
+/// Application configuration stored via <see cref="AppDefaults.DefaultConfigFile"/>.
 /// </summary>
 public sealed class AppConfig
 {
+    /// <summary>HTTP host for the game API. Default <see cref="AppDefaults.DefaultHost"/>.</summary>
+    [JsonPropertyName("apiScheme")]
+    public string ApiScheme { get; set; } = AppDefaults.DefaultApiScheme;
+
+    [JsonPropertyName("apiHost")]
+    public string ApiHost { get; set; } = AppDefaults.DefaultHost;
+
     [JsonPropertyName("apiPort")]
-    public int ApiPort { get; set; } = 9997;
+    public int ApiPort { get; set; } = AppDefaults.DefaultApiPort;
 
     [JsonPropertyName("swaggerPort")]
-    public int SwaggerPort { get; set; } = 9998;
+    public int SwaggerPort { get; set; } = AppDefaults.DefaultSwaggerPort;
 
     [JsonPropertyName("swaggerCorsOrigin")]
-    public string SwaggerCorsOrigin { get; set; } = "http://localhost:9998";
+    public string SwaggerCorsOrigin { get; set; } =
+        $"{AppDefaults.DefaultApiScheme}://localhost:{AppDefaults.DefaultSwaggerPort}";
 
-    /// <summary>Override blueprints folder. null = default %APPDATA%\SpaceEngineers\Blueprints\local</summary>
+    /// <summary>Override blueprints folder. Empty = default %APPDATA%\SpaceEngineers\Blueprints\local.</summary>
     [JsonPropertyName("blueprintsFolder")]
-    public string BlueprintsFolder { get; set; }
+    public string BlueprintsFolder { get; set; } = AppDefaults.DefaultBlueprintsFolder;
 
-    /// <summary>API key for protected endpoints. null = no auth.</summary>
-    [JsonPropertyName("apiKey")]
-    public string ApiKey { get; set; }
-
-    /// <summary>Max blueprint .sbc file size in bytes. Default 50 MB.</summary>
     [JsonPropertyName("maxBlueprintFileSizeBytes")]
-    public long MaxBlueprintFileSizeBytes { get; set; } = 50 * 1024 * 1024;
+    public long MaxBlueprintFileSizeBytes { get; set; } = AppDefaults.DefaultMaxBlueprintFileSizeBytes;
 
-    /// <summary>Max number of grids allowed in a single blueprint. Default 50.</summary>
     [JsonPropertyName("maxGridsPerBlueprint")]
-    public int MaxGridsPerBlueprint { get; set; } = 50;
+    public int MaxGridsPerBlueprint { get; set; } = AppDefaults.DefaultMaxGridsPerBlueprint;
 }

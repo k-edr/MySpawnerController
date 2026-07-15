@@ -6,5 +6,5 @@ namespace GridSpawner.Shared.Models;
 public sealed class SpawnResponse
 {
     [JsonPropertyName("grids")]
-    public List<GridDto> Grids { get; set; } = new();
+    public IReadOnlyList<GridDto> Grids { get; set; } = new List<GridDto>();
 }

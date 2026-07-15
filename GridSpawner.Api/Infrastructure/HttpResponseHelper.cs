@@ -1,3 +1,5 @@
+using System;
+using System.IO;
 using System.Net;
 using System.Text;
 using System.Text.Json;
@@ -14,6 +16,28 @@ public static class HttpResponseHelper
         PropertyNameCaseInsensitive = true,
         WriteIndented = false
     };
+
+    /// <summary>
+    /// Logger callback. Set once during startup (ApiServer wire-up).
+    /// </summary>
+    public static Action<string> Log { get; set; } = _ => { };
+
+    /// <summary>
+    /// Deserialize request body. Returns null on failure and logs the error.
+    /// </summary>
+    public static T ReadBody<T>(HttpListenerContext ctx) where T : class
+    {
+        try
+        {
+            using var reader = new StreamReader(ctx.Request.InputStream, Encoding.UTF8);
+            return JsonSerializer.Deserialize<T>(reader.ReadToEnd(), JsonOpts);
+        }
+        catch (Exception ex)
+        {
+            Log($"[HttpResponseHelper] ReadBody<{typeof(T).Name}> failed: {ex.Message}");
+            return null;
+        }
+    }
 
     public static void Json(HttpListenerContext ctx, int code, object obj, string corsOrigin = null)
     {
@@ -44,6 +68,6 @@ public static class HttpResponseHelper
             ctx.Response.OutputStream.Write(data, 0, data.Length);
             ctx.Response.OutputStream.Close();
         }
-        catch { }
+        catch (Exception ex) { Log($"[HttpResponseHelper] Respond failed: {ex.Message}"); }
     }
 }

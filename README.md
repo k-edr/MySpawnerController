@@ -111,6 +111,16 @@ powershell -ExecutionPolicy Bypass -File build.ps1
 | `POST` | `/api/v1/spawn` | Spawn grid `{"blueprint":"...", "position":{"x":0,"y":0,"z":0}}` |
 | `POST` | `/api/v1/spawn-tests` | Spawn 3 test grids |
 
+### Terminal Block Interaction
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/api/v1/grids/{id}/blocks` | List all functional blocks on a grid |
+| `GET` | `/api/v1/grids/{id}/blocks/{x}/{y}/{z}` | Get block details (actions + properties) |
+| `POST` | `/api/v1/grids/{id}/blocks/{x}/{y}/{z}/action` | Execute a block action `{"actionId":"OnOff_Off"}` |
+| `GET` | `/api/v1/grids/{id}/blocks/{x}/{y}/{z}/properties/{propId}` | Get property value |
+| `PUT` | `/api/v1/grids/{id}/blocks/{x}/{y}/{z}/properties/{propId}` | Set property `{"value":"true"}` |
+
 ---
 
 ## PowerShell Examples
@@ -125,6 +135,23 @@ Invoke-WebRequest -UseBasicParsing -Method POST http://localhost:9997/api/v1/spa
 
 # Health check
 Invoke-WebRequest -UseBasicParsing http://localhost:9997/api/v1/health
+
+# List terminal blocks on a grid
+Invoke-WebRequest -UseBasicParsing http://localhost:9997/api/v1/grids/12345/blocks
+
+# Get block details (actions + properties)
+Invoke-WebRequest -UseBasicParsing http://localhost:9997/api/v1/grids/12345/blocks/0/0/0
+
+# Execute block action (e.g. toggle power)
+$actionBody = '{"actionId":"OnOff_Off"}'
+Invoke-WebRequest -UseBasicParsing -Method POST http://localhost:9997/api/v1/grids/12345/blocks/0/0/0/action -Body $actionBody -ContentType "application/json"
+
+# Get property
+Invoke-WebRequest -UseBasicParsing http://localhost:9997/api/v1/grids/12345/blocks/0/0/0/properties/OnOff
+
+# Set property
+$propBody = '{"value":"true"}'
+Invoke-WebRequest -UseBasicParsing -Method PUT http://localhost:9997/api/v1/grids/12345/blocks/0/0/0/properties/OnOff -Body $propBody -ContentType "application/json"
 ```
 
 ---

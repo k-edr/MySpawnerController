@@ -22,8 +22,9 @@ namespace GridSpawner.Plugin.Application
             {
                 return slim.FatBlock.BlockDefinition.ToString();
             }
-            catch
+            catch (Exception ex)
             {
+                Infrastructure.Logger.Warn($"FatBlockInfoExtractor.GetTypeName: {ex.Message}");
                 return slim.FatBlock?.GetType().Name ?? "Unknown";
             }
         }

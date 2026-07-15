@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.OpenApi.Models;
 using GridSpawner.Shared.Configuration;
-using GridSpawner.Shared.Models;
 using GridSpawner.Swagger.Application;
 using Swashbuckle.AspNetCore.Swagger;
 
@@ -16,7 +15,7 @@ public static class SwaggerHostExtensions
         services.AddSingleton<ISwaggerProvider>(new GameApiSwaggerProvider(doc));
     }
 
-    public static void ConfigureSwagger(this WebApplication app, int gamePort)
+    public static void ConfigureSwagger(this WebApplication app, AppConfig config)
     {
         app.UseSwagger();
         app.UseSwaggerUI(c =>
@@ -28,7 +27,8 @@ public static class SwaggerHostExtensions
         app.MapGet("/", () => Results.Redirect("/swagger"));
         app.MapGet("/favicon.ico", () => Results.StatusCode(204));
         app.MapGet("/swagger-ui/connection-status.js", () =>
-            Results.Content(ConnectionStatusScript(gamePort), "application/javascript; charset=utf-8"));
+            Results.Content(ConnectionStatusScript(config),
+                "application/javascript; charset=utf-8"));
     }
 
     public static void PrintBanner(AppConfig config)
@@ -38,14 +38,14 @@ public static class SwaggerHostExtensions
         Console.WriteLine(" GridSpawner.Plugin Swagger UI");
         Console.WriteLine("============================================");
         Console.ResetColor();
-        Console.WriteLine($"  Swagger : http://localhost:{config.SwaggerPort}/swagger");
-        Console.WriteLine($"  Game API : http://localhost:{config.ApiPort}");
+        Console.WriteLine($"  Swagger : {config.ApiScheme}://{config.ApiHost}:{config.SwaggerPort}/swagger");
+        Console.WriteLine($"  Game API : {config.ApiScheme}://{config.ApiHost}:{config.ApiPort}");
         Console.WriteLine();
         Console.WriteLine("  Press Ctrl+C to stop (or close this window).");
         Console.WriteLine();
     }
 
-    private static string ConnectionStatusScript(int gamePort) => $@"(function() {{
+    private static string ConnectionStatusScript(AppConfig config) => $@"(function() {{
   var style = document.createElement('style');
   style.textContent = `
     .connection-status {{
@@ -65,7 +65,7 @@ public static class SwaggerHostExtensions
   dot.textContent = 'Game: checking...';
   document.body.insertBefore(dot, document.body.firstChild);
 
-  fetch('http://localhost:{gamePort}/api/v1/health')
+  fetch('{config.ApiScheme}://{config.ApiHost}:{config.ApiPort}/api/v1/health')
     .then(r => r.json())
     .then(d => {{
       dot.textContent = d.ready ? 'Game: connected' : 'Game: loading...';

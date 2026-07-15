@@ -26,7 +26,7 @@ namespace GridSpawner.Plugin.Application
                 var p = grid.PositionComp.GetPosition();
                 dto.Position = new Vector3Dto { X = p.X, Y = p.Y, Z = p.Z };
             }
-            catch { }
+            catch (Exception ex) { Logger.Warn($"GridDtoMapper position: {ex.Message}"); }
 
             try
             {
@@ -36,7 +36,7 @@ namespace GridSpawner.Plugin.Application
                     dto.Velocity = new Vector3Dto { X = v.X, Y = v.Y, Z = v.Z };
                 }
             }
-            catch { }
+            catch (Exception ex) { Logger.Warn($"GridDtoMapper velocity: {ex.Message}"); }
 
             MapBlocks(grid, dto);
             return dto;
@@ -47,7 +47,7 @@ namespace GridSpawner.Plugin.Application
             try
             {
                 var blocks = new List<IMySlimBlock>();
-                grid.GetBlocks(blocks);
+                grid.GetBlocks(blocks, null);
                 foreach (var slim in blocks)
                 {
                     if (slim == null) continue;

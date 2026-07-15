@@ -12,7 +12,7 @@
     <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>
-    <LangVersion>9</LangVersion>
+    <LangVersion>10</LangVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -83,14 +83,15 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Application\BlueprintDeserializer.cs" />
-    <Compile Include="Application\DeleteTask.cs" />
     <Compile Include="Application\FatBlockInfoExtractor.cs" />
     <Compile Include="Application\GridDtoMapper.cs" />
+    <Compile Include="Application\GridTracker.cs" />
     <Compile Include="Application\IBlockInfoExtractor.cs" />
+    <Compile Include="Application\MainThreadTask.cs" />
     <Compile Include="Application\PostSpawnFixup.cs" />
     <Compile Include="Application\SlimBlockInfoExtractor.cs" />
     <Compile Include="Application\SpawnService.cs" />
-    <Compile Include="Application\SpawnTask.cs" />
+    <Compile Include="Application\TerminalBlockService.cs" />
     <Compile Include="Infrastructure\Logger.cs" />
     <Compile Include="Infrastructure\Plugin.cs" />
     <Compile Include="Infrastructure\SessionComponent.cs" />

@@ -126,6 +126,10 @@ Write-Host ""
 # --- 6. Copy DLLs ---
 Write-Host "[6/8] Copying DLLs..." -ForegroundColor Yellow
 
+# Kill Swagger if running to unlock the exe for copy
+Stop-Process -Name GridSpawner.Swagger -Force -ErrorAction SilentlyContinue
+Start-Sleep -Seconds 1
+
 # Main plugin DLL (with retry)
 $mainDllPath = Join-Path $pluginsDir "GridSpawner.Plugin.dll"
 $mainDll = Get-ChildItem -Path (Join-Path $mainProject "bin\Release") -Recurse -Filter "GridSpawner.Plugin.dll" -ErrorAction SilentlyContinue | Select-Object -First 1

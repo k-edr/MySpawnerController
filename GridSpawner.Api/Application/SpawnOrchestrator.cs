@@ -6,10 +6,6 @@ using VRageMath;
 
 namespace GridSpawner.Api.Application;
 
-/// <summary>
-/// Orchestrates spawn requests: validates input, resolves blueprint paths,
-/// delegates to <see cref="ISpawnService"/>.
-/// </summary>
 public sealed class SpawnOrchestrator
 {
     private static readonly JsonSerializerOptions JsonOpts = new()
@@ -24,28 +20,47 @@ public sealed class SpawnOrchestrator
     public SpawnOrchestrator(ISpawnService spawnService, string blueprintsFolderOverride = null)
     {
         _spawnService = spawnService;
-        _blueprintsFolder = blueprintsFolderOverride
-            ?? Path.Combine(
-                System.Environment.GetFolderPath(System.Environment.SpecialFolder.ApplicationData),
-                "SpaceEngineers", "Blueprints", "local");
+        _blueprintsFolder = blueprintsFolderOverride ?? AppDefaults.DefaultBlueprintsFolder;
     }
 
     public SpawnResult SpawnFromJson(string json)
     {
-        SpawnRequest req;
-        try { req = JsonSerializer.Deserialize<SpawnRequest>(json, JsonOpts); }
-        catch (JsonException ex) { return SpawnResult.BadRequest($"Invalid JSON: {ex.Message}"); }
-
-        if (req == null || string.IsNullOrWhiteSpace(req.Blueprint))
-            return SpawnResult.BadRequest("Missing required field: blueprint");
+        var req = DeserializeRequest(json);
+        if (req == null) return SpawnResult.BadRequest("Missing required field: blueprint");
 
         if (!_spawnService.IsReady)
             return SpawnResult.NotReady();
 
-        string bpPath = Path.Combine(_blueprintsFolder, req.Blueprint, "bp.sbc");
+        string bpPath = ResolveBlueprintPath(req.Blueprint);
         if (!File.Exists(bpPath))
             return SpawnResult.NotFound($"Blueprint not found: {req.Blueprint}");
 
+        return DoSpawn(req, bpPath);
+    }
+
+    public SpawnResult SpawnTestGrids()
+    {
+        if (!_spawnService.IsReady)
+            return SpawnResult.NotReady();
+
+        var spawner = new TestGridSpawner(_spawnService, _blueprintsFolder);
+        var grids = spawner.SpawnAll();
+        return SpawnResult.Ok(new SpawnResponse { Grids = grids });
+    }
+
+    // ── Private helpers ──
+
+    private SpawnRequest DeserializeRequest(string json)
+    {
+        try { return JsonSerializer.Deserialize<SpawnRequest>(json, JsonOpts); }
+        catch (JsonException) { return null; }
+    }
+
+    private string ResolveBlueprintPath(string blueprintName) =>
+        Path.Combine(_blueprintsFolder, blueprintName, AppDefaults.BlueprintExtension);
+
+    private SpawnResult DoSpawn(SpawnRequest req, string bpPath)
+    {
         var pos = req.Position ?? new SpawnPosition();
         var grids = _spawnService.Spawn(req.Blueprint, bpPath,
             new Vector3D(pos.X, pos.Y, pos.Z), req.DisplayName);
@@ -55,29 +70,4 @@ public sealed class SpawnOrchestrator
 
         return SpawnResult.Ok(new SpawnResponse { Grids = grids });
     }
-
-    public SpawnResult SpawnTestGrids()
-    {
-        if (!_spawnService.IsReady)
-            return SpawnResult.NotReady();
-
-        var tests = new (string name, Vector3D offset)[]
-        {
-            ("TestGrid_MultiConnectorGrid", new Vector3D(0, 0, 0)),
-            ("TestGrid_PBWithPanel",        new Vector3D(0, 0, 10)),
-            ("TestGrid_SingleConnector",    new Vector3D(0, 0, -10)),
-        };
-
-        var allGrids = new SpawnResponse();
-        foreach (var (name, offset) in tests)
-        {
-            string bpPath = Path.Combine(_blueprintsFolder, name, "bp.sbc");
-            if (!File.Exists(bpPath)) continue;
-            var grids = _spawnService.Spawn(name, bpPath, offset, null);
-            if (grids != null) allGrids.Grids.AddRange(grids);
-        }
-
-        return SpawnResult.Ok(allGrids);
-    }
 }
-

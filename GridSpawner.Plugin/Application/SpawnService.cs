@@ -15,176 +15,226 @@ using VRage.Game;
 using VRage.ObjectBuilders;
 using VRageMath;
 
-namespace GridSpawner.Plugin.Application
+namespace GridSpawner.Plugin.Application;
+
+/// <summary>
+/// Implements <see cref="ISpawnService"/> for the API layer.
+/// All game-thread work is enqueued as <see cref="MainThreadTask"/> closures
+/// and processed by <see cref="ProcessQueue"/>, called from SessionComponent.UpdateAfterSimulation.
+/// </summary>
+public sealed class SpawnService : ISpawnService, IDisposable
 {
-    /// <summary>
-    /// Implements <see cref="ISpawnService"/> for the API layer.
-    /// Spawn/delete operations are enqueued and processed on the main thread
-    /// via <see cref="ProcessQueue"/>, called from SessionComponent.UpdateAfterSimulation.
-    /// </summary>
-    public sealed class SpawnService : ISpawnService
+    private readonly ConcurrentQueue<MainThreadTask> _queue = new();
+    private readonly GridTracker _tracker = new();
+    private readonly TimeSpan _timeout = TimeSpan.FromSeconds(30);
+    private readonly AppConfig _config;
+    private double _cleanupAccumulator; // seconds of game time
+    private const double CleanupIntervalSeconds = 10.0;
+
+    public SpawnService(AppConfig config)
     {
-        private readonly ConcurrentQueue<object> _queue = new ConcurrentQueue<object>();
-        private readonly ConcurrentDictionary<long, MyCubeGrid> _trackedGrids =
-            new ConcurrentDictionary<long, MyCubeGrid>();
-        private readonly TimeSpan _timeout = TimeSpan.FromSeconds(30);
-        private readonly AppConfig _config;
+        _config = config;
+    }
 
-        public SpawnService(AppConfig config)
+    public bool IsReady => MySession.Static?.Ready == true;
+
+    // ── ISpawnService (called from API thread) ───────────────
+
+    public IReadOnlyList<GridDto> Spawn(string blueprintName, string blueprintPath,
+        Vector3D position, string displayName)
+    {
+        string bp = blueprintPath;
+        string bpName = blueprintName;
+        string dispName = displayName;
+        Vector3D off = position;
+
+        var task = new MainThreadTask<List<GridDto>>();
+        task.Process = () => task.Result = DoSpawn(bp, off, bpName, dispName);
+        _queue.Enqueue(task);
+        if (!task.Done.Wait(_timeout))
         {
-            _config = config;
+            Logger.Error($"Spawn timeout: {bpName}");
+            return null;
         }
+        return task.Result;
+    }
 
-        public bool IsReady => MySession.Static?.Ready == true;
-
-        // ── ISpawnService (called from API thread) ───────────
-
-        public List<GridDto> Spawn(string blueprintName, string blueprintPath,
-            Vector3D position, string displayName)
+    public IReadOnlyList<BlueprintInfo> ListBlueprints(string blueprintsFolder)
+    {
+        var list = new List<BlueprintInfo>();
+        if (!Directory.Exists(blueprintsFolder)) return list;
+        foreach (var dir in Directory.GetDirectories(blueprintsFolder))
         {
-            var task = new SpawnTask
+            string name = Path.GetFileName(dir);
+            list.Add(new BlueprintInfo
             {
-                BpFile = blueprintPath,
-                Offset = position,
-                BlueprintName = blueprintName,
-                DisplayName = displayName
-            };
-            _queue.Enqueue(task);
-            if (!task.Done.Wait(_timeout))
-            {
-                Logger.Error($"Spawn timeout: {blueprintName}");
-                return null;
-            }
-            return task.Result;
+                Name = name,
+                Available = File.Exists(Path.Combine(dir, "bp.sbc"))
+            });
         }
+        return list;
+    }
 
-        public List<BlueprintInfo> ListBlueprints(string blueprintsFolder)
+    public IReadOnlyList<GridListItem> ListGrids() => _tracker.ListGrids();
+
+    public GridDto GetGrid(long id) => _tracker.GetGrid(id);
+
+    public bool DeleteGrid(long id)
+    {
+        var task = new MainThreadTask<bool>();
+        long entityId = id;
+        task.Process = () => task.Result = _tracker.TryRemove(entityId);
+        _queue.Enqueue(task);
+        if (!task.Done.Wait(_timeout)) return false;
+        return task.Result;
+    }
+
+    public IReadOnlyList<long> DeleteAllGrids()
+    {
+        var task = new MainThreadTask<List<long>>();
+        task.Process = () => task.Result = _tracker.RemoveAll();
+        _queue.Enqueue(task);
+        if (!task.Done.Wait(_timeout))
         {
-            var list = new List<BlueprintInfo>();
-            if (!Directory.Exists(blueprintsFolder)) return list;
-            foreach (var dir in Directory.GetDirectories(blueprintsFolder))
-            {
-                string name = Path.GetFileName(dir);
-                list.Add(new BlueprintInfo
-                {
-                    Name = name,
-                    Available = File.Exists(Path.Combine(dir, "bp.sbc"))
-                });
-            }
-            return list;
+            Logger.Error("DeleteAllGrids timeout");
+            return new List<long>();
         }
+        return task.Result;
+    }
 
-        public List<GridListItem> ListGrids()
+    // ── Terminal block interaction ───────────────────────────
+
+    public IReadOnlyList<TerminalBlockDto> GetGridBlocks(long gridId)
+    {
+        var task = new MainThreadTask<List<TerminalBlockDto>>();
+        long gid = gridId;
+        task.Process = () => task.Result = DoGetBlocks(gid);
+        _queue.Enqueue(task);
+        if (!task.Done.Wait(_timeout))
         {
-            var list = new List<GridListItem>();
-            foreach (var kv in _trackedGrids)
-            {
-                try
-                {
-                    var grid = kv.Value;
-                    if (grid == null || grid.MarkedForClose) continue;
-                    var pos = grid.PositionComp.GetPosition();
-                    list.Add(new GridListItem
-                    {
-                        Id = grid.EntityId,
-                        Name = grid.DisplayName,
-                        Position = new Vector3Dto { X = pos.X, Y = pos.Y, Z = pos.Z }
-                    });
-                }
-                catch { }
-            }
-            return list;
+            Logger.Error($"GetGridBlocks timeout: grid {gid}");
+            return new List<TerminalBlockDto>();
         }
+        return task.Result;
+    }
 
-        public GridDto GetGrid(long id)
+    public TerminalBlockDto GetBlockDetail(long gridId, int x, int y, int z)
+    {
+        var task = new MainThreadTask<TerminalBlockDto>();
+        long gid = gridId;
+        Vector3I pos = new(x, y, z);
+        task.Process = () => task.Result = DoGetBlockDetail(gid, pos);
+        _queue.Enqueue(task);
+        if (!task.Done.Wait(_timeout))
         {
-            if (!_trackedGrids.TryGetValue(id, out var grid) ||
-                grid == null || grid.MarkedForClose)
-                return null;
-            return GridDtoMapper.ToDto(grid);
+            Logger.Error($"GetBlockDetail timeout: grid {gid} at ({x},{y},{z})");
+            return null;
         }
+        return task.Result;
+    }
 
-        public bool DeleteGrid(long id)
+    public bool ExecuteBlockAction(long gridId, int x, int y, int z, string actionId)
+    {
+        var task = new MainThreadTask<bool>();
+        long gid = gridId;
+        Vector3I pos = new(x, y, z);
+        string act = actionId;
+        task.Process = () => task.Result = DoExecuteAction(gid, pos, act);
+        _queue.Enqueue(task);
+        if (!task.Done.Wait(_timeout)) return false;
+        return task.Result;
+    }
+
+    public string GetBlockProperty(long gridId, int x, int y, int z, string propertyId)
+    {
+        var task = new MainThreadTask<string>();
+        long gid = gridId;
+        Vector3I pos = new(x, y, z);
+        string prop = propertyId;
+        task.Process = () => task.Result = DoGetProperty(gid, pos, prop);
+        _queue.Enqueue(task);
+        if (!task.Done.Wait(_timeout)) return null;
+        return task.Result;
+    }
+
+    public bool SetBlockProperty(long gridId, int x, int y, int z,
+        string propertyId, string value)
+    {
+        var task = new MainThreadTask<bool>();
+        long gid = gridId;
+        Vector3I pos = new(x, y, z);
+        string prop = propertyId;
+        string val = value;
+        task.Process = () => task.Result = DoSetProperty(gid, pos, prop, val);
+        _queue.Enqueue(task);
+        if (!task.Done.Wait(_timeout)) return false;
+        return task.Result;
+    }
+
+    public bool SetProgramCode(long gridId, int x, int y, int z, string code)
+    {
+        var task = new MainThreadTask<bool>();
+        long gid = gridId;
+        Vector3I pos = new(x, y, z);
+        string c = code;
+        task.Process = () =>
         {
-            if (!_trackedGrids.TryGetValue(id, out var grid) || grid == null)
-                return false;
+            if (!_tracker.TryGet(gid, out var grid)) { task.Result = false; return; }
+            task.Result = TerminalBlockService.SetProgramCode(grid, pos, c);
+        };
+        _queue.Enqueue(task);
+        if (!task.Done.Wait(_timeout)) return false;
+        return task.Result;
+    }
 
-            var task = new DeleteTask { EntityId = id };
-            _queue.Enqueue(task);
-            if (!task.Done.Wait(_timeout)) return false;
-            return task.Result;
-        }
-
-        // ── Main-thread processing ───────────────────────────
-
-        /// <summary>Must be called on the game main thread (UpdateAfterSimulation).</summary>
-        public void ProcessQueue()
+    public bool WriteTextPanel(long gridId, int x, int y, int z, string text)
+    {
+        var task = new MainThreadTask<bool>();
+        long gid = gridId;
+        Vector3I pos = new(x, y, z);
+        string t = text;
+        task.Process = () =>
         {
-            while (_queue.TryDequeue(out var item))
-            {
-                try
-                {
-                    switch (item)
-                    {
-                        case SpawnTask st: ProcessSpawn(st); break;
-                        case DeleteTask dt: ProcessDelete(dt); break;
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Logger.Error("ProcessQueue", ex);
-                }
-            }
-        }
+            if (!_tracker.TryGet(gid, out var grid)) { task.Result = false; return; }
+            task.Result = TerminalBlockService.WriteTextPanel(grid, pos, t);
+        };
+        _queue.Enqueue(task);
+        if (!task.Done.Wait(_timeout)) return false;
+        return task.Result;
+    }
 
-        // ── Spawn ────────────────────────────────────────────
+    public bool RunProgram(long gridId, int x, int y, int z, string argument)
+    {
+        var task = new MainThreadTask<bool>();
+        long gid = gridId;
+        Vector3I pos = new(x, y, z);
+        string arg = argument;
+        task.Process = () =>
+        {
+            if (!_tracker.TryGet(gid, out var grid)) { task.Result = false; return; }
+            task.Result = TerminalBlockService.RunProgram(grid, pos, arg);
+        };
+        _queue.Enqueue(task);
+        if (!task.Done.Wait(_timeout)) return false;
+        return task.Result;
+    }
 
-        private void ProcessSpawn(SpawnTask task)
+    // ── Main-thread processing
+    // ── Main-thread processing ───────────────────────────────
+
+    /// <summary>Must be called on the game main thread (UpdateAfterSimulation).</summary>
+    public void ProcessQueue()
+    {
+        while (_queue.TryDequeue(out var task))
         {
             try
             {
-                Logger.Info($"Spawning: {task.BlueprintName} @ X:{task.Offset.X} Y:{task.Offset.Y} Z:{task.Offset.Z}");
-
-                var gridBuilders = BlueprintDeserializer.Deserialize(task.BpFile, _config, out string error);
-                if (gridBuilders == null)
-                {
-                    Logger.Error($"Deserialize failed: {task.BlueprintName} — {error}");
-                    task.Result = null;
-                    return;
-                }
-
-                MyAPIGateway.Entities.RemapObjectBuilderCollection(gridBuilders);
-
-                var result = new List<GridDto>();
-                string displayName = task.DisplayName;
-
-                foreach (var gb in gridBuilders)
-                {
-                    ConfigureBuilder(gb, task.Offset);
-                    var ent = MyAPIGateway.Entities.CreateFromObjectBuilderAndAdd(gb);
-
-                    if (ent is MyCubeGrid grid)
-                    {
-                        PostSpawnFixup.Apply(grid);
-
-                        if (!string.IsNullOrEmpty(displayName))
-                        {
-                            grid.DisplayName = displayName;
-                            displayName = null;
-                        }
-
-                        result.Add(GridDtoMapper.ToDto(grid));
-                        _trackedGrids[grid.EntityId] = grid;
-                        Logger.Info($"  OK: {grid.DisplayName} Id={grid.EntityId}");
-                    }
-                }
-
-                task.Result = result;
+                task.Process?.Invoke();
             }
             catch (Exception ex)
             {
-                Logger.Error($"Spawn failed: {task.BlueprintName}", ex);
-                task.Result = null;
+                Logger.Error("ProcessQueue", ex);
+                task.Error = ex;
             }
             finally
             {
@@ -192,46 +242,117 @@ namespace GridSpawner.Plugin.Application
             }
         }
 
-        // ── Delete ────────────────────────────────────────────
-
-        private void ProcessDelete(DeleteTask task)
+        // Periodic dead-grid cleanup (every 10 seconds of sim time, regardless of FPS)
+        _cleanupAccumulator += MySession.Static.ElapsedGameTime.TotalSeconds;
+        if (_cleanupAccumulator >= CleanupIntervalSeconds)
         {
-            try
+            _cleanupAccumulator = 0;
+            int removed = _tracker.CleanupDead();
+            if (removed > 0)
+                Logger.Info($"CleanupDead: removed {removed} stale grids");
+        }
+    }
+
+    // ── Dispose ──────────────────────────────────────────────
+
+    public void Dispose()
+    {
+        // Drain any remaining tasks and release their OS handles
+        while (_queue.TryDequeue(out var task))
+        {
+            try { task.Done.Set(); } catch { }
+            try { task.Dispose(); } catch { }
+        }
+    }
+
+    // ── Private: game-thread implementations ─────────────────
+
+    private List<GridDto> DoSpawn(string bpFile, Vector3D offset,
+        string bpName, string dispName)
+    {
+        Logger.Info($"Spawning: {bpName} @ X:{offset.X} Y:{offset.Y} Z:{offset.Z}");
+
+        var gridBuilders = BlueprintDeserializer.Deserialize(bpFile, _config, out string error);
+        if (gridBuilders == null)
+        {
+            Logger.Error($"Deserialize failed: {bpName} — {error}");
+            return null;
+        }
+
+        MyAPIGateway.Entities.RemapObjectBuilderCollection(gridBuilders);
+
+        var result = new List<GridDto>();
+        string displayName = dispName;
+
+        foreach (var gb in gridBuilders)
+        {
+            ConfigureBuilder(gb, offset);
+            var ent = MyAPIGateway.Entities.CreateFromObjectBuilderAndAdd(gb);
+
+            if (ent is MyCubeGrid grid)
             {
-                if (_trackedGrids.TryRemove(task.EntityId, out var grid))
+                PostSpawnFixup.Apply(grid);
+
+                if (!string.IsNullOrEmpty(displayName))
                 {
-                    grid.Close();
-                    task.Result = true;
+                    grid.DisplayName = displayName;
+                    displayName = null;
                 }
-                else
-                {
-                    task.Result = false;
-                }
-            }
-            catch (Exception ex)
-            {
-                Logger.Error($"Delete grid {task.EntityId}", ex);
-                task.Result = false;
-            }
-            finally
-            {
-                task.Done.Set();
+
+                result.Add(GridDtoMapper.ToDto(grid));
+                _tracker.Track(grid);
+                Logger.Info($"  OK: {grid.DisplayName} Id={grid.EntityId}");
             }
         }
 
-        // ── Helpers ──────────────────────────────────────────
+        return result;
+    }
 
-        private static void ConfigureBuilder(MyObjectBuilder_CubeGrid gb, Vector3D offset)
-        {
-            gb.CreatePhysics = true;
-            gb.Editable = true;
-            gb.DestructibleBlocks = true;
+    private List<TerminalBlockDto> DoGetBlocks(long gridId)
+    {
+        if (!_tracker.TryGet(gridId, out var grid))
+            return new List<TerminalBlockDto>();
+        return TerminalBlockService.GetGridBlocks(grid);
+    }
 
-            var po = gb.PositionAndOrientation;
-            MatrixD m = po.HasValue
-                ? MatrixD.CreateWorld(po.Value.Position + offset, po.Value.Forward, po.Value.Up)
-                : MatrixD.CreateWorld(offset, Vector3D.Forward, Vector3D.Up);
-            gb.PositionAndOrientation = new MyPositionAndOrientation(m);
-        }
+    private TerminalBlockDto DoGetBlockDetail(long gridId, Vector3I pos)
+    {
+        if (!_tracker.TryGet(gridId, out var grid))
+            return null;
+        return TerminalBlockService.GetBlockDetail(grid, pos);
+    }
+
+    private bool DoExecuteAction(long gridId, Vector3I pos, string actionId)
+    {
+        if (!_tracker.TryGet(gridId, out var grid))
+            return false;
+        return TerminalBlockService.ExecuteAction(grid, pos, actionId);
+    }
+
+    private string DoGetProperty(long gridId, Vector3I pos, string propertyId)
+    {
+        if (!_tracker.TryGet(gridId, out var grid))
+            return null;
+        return TerminalBlockService.GetProperty(grid, pos, propertyId);
+    }
+
+    private bool DoSetProperty(long gridId, Vector3I pos, string propertyId, string value)
+    {
+        if (!_tracker.TryGet(gridId, out var grid))
+            return false;
+        return TerminalBlockService.SetProperty(grid, pos, propertyId, value);
+    }
+
+    private static void ConfigureBuilder(MyObjectBuilder_CubeGrid gb, Vector3D offset)
+    {
+        gb.CreatePhysics = true;
+        gb.Editable = true;
+        gb.DestructibleBlocks = true;
+
+        var po = gb.PositionAndOrientation;
+        MatrixD m = po.HasValue
+            ? MatrixD.CreateWorld(po.Value.Position + offset, po.Value.Forward, po.Value.Up)
+            : MatrixD.CreateWorld(offset, Vector3D.Forward, Vector3D.Up);
+        gb.PositionAndOrientation = new MyPositionAndOrientation(m);
     }
 }

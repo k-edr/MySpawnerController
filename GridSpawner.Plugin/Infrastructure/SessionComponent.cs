@@ -7,7 +7,8 @@ using VRage.ObjectBuilders;
 namespace GridSpawner.Plugin.Infrastructure
 {
     /// <summary>
-    /// Session component: starts JSON API server.
+    /// Session component: composition root.
+    /// Wires dependencies and starts the HTTP API server.
     /// Reads config from %APPDATA%\SpaceEngineers\GridSpawner.json
     /// </summary>
     [MySessionComponentDescriptor(MyUpdateOrder.AfterSimulation, 1000)]
@@ -24,7 +25,16 @@ namespace GridSpawner.Plugin.Infrastructure
             Logger.Info($"Config: apiPort={config.ApiPort}, cors={config.SwaggerCorsOrigin}");
 
             _spawnService = new SpawnService(config);
-            _apiServer = new ApiServer(config, _spawnService, Logger.Info);
+            _apiServer = new ApiServer(config, Logger.Info);
+
+            // ── Register route handlers ──
+            var router = _apiServer.Router;
+            HealthHandler.Register(router, _spawnService);
+            BlueprintHandler.Register(router, _spawnService);
+            GridHandler.Register(router, _spawnService);
+            SpawnHandler.Register(router, _spawnService, config);
+            BlockHandler.Register(router, _spawnService);
+
             _apiServer.Start();
         }
 
@@ -36,6 +46,7 @@ namespace GridSpawner.Plugin.Infrastructure
         protected override void UnloadData()
         {
             _apiServer?.Dispose();
+            _spawnService?.Dispose();
             Logger.Info("API server stopped");
         }
     }

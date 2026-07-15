@@ -1,30 +1,27 @@
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using GridSpawner.Shared.Configuration;
-using GridSpawner.Shared.Models;
 using GridSpawner.Swagger.Application;
 using GridSpawner.Swagger.Infrastructure;
 
 var config = LoadConfig();
-var doc = OpenApiDocumentBuilder.Build(config.ApiPort);
+var doc = OpenApiDocumentBuilder.Build(config);
 
 var builder = WebApplication.CreateBuilder(args);
-builder.WebHost.UseUrls($"http://localhost:{config.SwaggerPort}");
+builder.WebHost.UseUrls($"{config.ApiScheme}://{config.ApiHost}:{config.SwaggerPort}");
 builder.Logging.SetMinimumLevel(LogLevel.Warning);
 builder.Services.AddSwaggerDocument(doc);
 
 var app = builder.Build();
 
-app.ConfigureSwagger(config.ApiPort);
+app.ConfigureSwagger(config);
 SwaggerHostExtensions.PrintBanner(config);
 
 app.Run();
 
 static AppConfig LoadConfig()
 {
-    var path = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-        "SpaceEngineers", "GridSpawner.json");
+    var path = AppDefaults.DefaultConfigFile;
 
     try
     {
