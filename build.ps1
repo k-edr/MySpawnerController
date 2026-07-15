@@ -208,8 +208,7 @@ Write-Host "  Plugins dir : $pluginsDir"
 Write-Host "  Config      : $configXml"
 Write-Host "  Log         : `$env:APPDATA\SpaceEngineers\GridSpawner.log"
 Write-Host ""
-Write-Host "  Launch game     : .\run_world.bat" -ForegroundColor Cyan
-Write-Host "  Launch swagger  : .\run_swagger.bat" -ForegroundColor Cyan
+Write-Host "  Build + Run + Test : .\run.bat" -ForegroundColor Cyan
 Write-Host "  Game API        : http://localhost:9997" -ForegroundColor Cyan
 Write-Host "  Swagger UI      : http://localhost:9998/swagger" -ForegroundColor Cyan
 Write-Host "============================================" -ForegroundColor Cyan

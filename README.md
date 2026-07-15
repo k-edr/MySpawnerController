@@ -1,41 +1,27 @@
-# GridSpawner.Plugin — HTTP API for spawning grids
+# GridSpawner — HTTP API for spawning grids
 
 Плагин поднимает JSON API на `localhost:9997`.
 Сваггер запускается **отдельным процессом** на `localhost:9998`.
 
 ## Быстрый старт (всё одной командой)
 
-```powershell
-powershell -ExecutionPolicy Bypass -File build_and_run.ps1
+```
+.\run.bat
 ```
 
-Или двойным кликом: `build_and_run.bat`
-
 Что делает:
-1. Билдит все 3 проекта
+1. Билдит все 4 проекта
 2. Копирует DLL в `Bin64/Plugins/`
-3. Запускает игру с миром `Empty_World_In`
+3. Запускает игру (AutoWorldLoader загружает мир)
 4. Запускает сваггер в отдельном окне
 5. Ждёт загрузки мира
 6. Спавнит 3 тестовых грида
 
-## Ручной запуск
+## Только сборка
 
-### Собрать и задеплоить
 ```powershell
 powershell -ExecutionPolicy Bypass -File build.ps1
 ```
-
-### Запустить игру
-```batch
-run_world.bat
-```
-
-### Запустить сваггер (отдельный терминал)
-```batch
-run_swagger.bat
-```
-→ Открыть `http://localhost:9998/swagger`
 
 ## Порты
 
@@ -60,7 +46,7 @@ run_swagger.bat
 
 ```powershell
 # Спавн всех тестовых гридов
-///   Invoke-WebRequest -UseBasicParsing -Method POST http://localhost:9997/api/v1/spawn-tests
+Invoke-WebRequest -UseBasicParsing -Method POST http://localhost:9997/api/v1/spawn-tests
 
 # Спавн с кастомной позицией
 $body = '{"blueprint":"TestGrid_SingleConnector","displayName":"MyGrid","position":{"x":50,"y":0,"z":100}}'
@@ -73,11 +59,12 @@ Invoke-WebRequest -UseBasicParsing http://localhost:9997/api/v1/health
 ## Архитектура
 
 ```
-GridSpawner.Api/          — netstandard2.0 library: DTOs, ISpawnService, ApiServer
-GridSpawner.Plugin/              — .NET Framework 4.8: PluginLoader plugin, SpawnService, game API
-GridSpawner.Swagger/      — .NET 8.0 console app: Swagger UI server (separate process)
+GridSpawner.Shared/        — netstandard2.0: DTOs, AppConfig
+GridSpawner.Api/           — netstandard2.0: ISpawnService, ApiServer, routing
+GridSpawner.Plugin/        — .NET Framework 4.8: PluginLoader plugin, SpawnService
+GridSpawner.Swagger/       — .NET 8.0: Swagger UI (Swashbuckle, separate process)
 ```
 
 ## Логи
 
-%APPDATA%\SpaceEngineers\GridSpawner.log
+`%APPDATA%\SpaceEngineers\GridSpawner.log`
