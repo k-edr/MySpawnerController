@@ -1,4 +1,4 @@
-# MySpawnerController — HTTP API for spawning grids
+# GridSpawner.Plugin — HTTP API for spawning grids
 
 Плагин поднимает JSON API на `localhost:9997`.
 Сваггер запускается **отдельным процессом** на `localhost:9998`.
@@ -60,7 +60,7 @@ run_swagger.bat
 
 ```powershell
 # Спавн всех тестовых гридов
-Invoke-WebRequest -UseBasicParsing -Method POST http://localhost:9997/api/v1/spawn-tests
+///   Invoke-WebRequest -UseBasicParsing -Method POST http://localhost:9997/api/v1/spawn-tests
 
 # Спавн с кастомной позицией
 $body = '{"blueprint":"TestGrid_SingleConnector","displayName":"MyGrid","position":{"x":50,"y":0,"z":100}}'
@@ -73,11 +73,11 @@ Invoke-WebRequest -UseBasicParsing http://localhost:9997/api/v1/health
 ## Архитектура
 
 ```
-MySpawnerController.Api/          — netstandard2.0 library: DTOs, ISpawnService, ApiServer
-MySpawnerController/              — .NET Framework 4.8: PluginLoader plugin, SpawnService, game API
-MySpawnerController.Swagger/      — .NET 8.0 console app: Swagger UI server (separate process)
+GridSpawner.Api/          — netstandard2.0 library: DTOs, ISpawnService, ApiServer
+GridSpawner.Plugin/              — .NET Framework 4.8: PluginLoader plugin, SpawnService, game API
+GridSpawner.Swagger/      — .NET 8.0 console app: Swagger UI server (separate process)
 ```
 
 ## Логи
 
-`%APPDATA%\SpaceEngineers\MySpawnerController.log`
+%APPDATA%\SpaceEngineers\GridSpawner.log

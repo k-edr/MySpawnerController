@@ -1,4 +1,4 @@
-# MySpawnerController — Test Plan
+# GridSpawner.Plugin — Test Plan
 
 ## 1. Build & Deploy
 
@@ -10,8 +10,8 @@ powershell -ExecutionPolicy Bypass -File build.ps1
 |-------|----------|
 | API Build OK | ✅ |
 | Main Build OK | ✅ |
-| DLLs copied to Plugins/ | `MySpawnerController.dll`, `MySpawnerController.Api.dll`, `System.Text.Json.dll` |
-| config.xml updated | Contains `<Id>...MySpawnerController.dll</Id>` |
+| DLLs copied to Plugins/ | `GridSpawner.Plugin.dll`, `GridSpawner.Api.dll`, `System.Text.Json.dll` |
+| config.xml updated | Contains `<Id>...GridSpawner.Plugin.dll</Id>` |
 
 ## 2. Game Launch
 
@@ -22,7 +22,7 @@ run_world.bat
 | Check | Expected |
 |-------|----------|
 | Game starts, loads world directly | ✅ No main menu |
-| `MySpawnerController.log` created | `"Plugin loaded. Swagger UI at http://localhost:9998/swagger"` |
+| `GridSpawner.Plugin.log` created | `"Plugin loaded. Swagger UI at http://localhost:9998/swagger"` |
 
 ## 3. API Tests
 
@@ -140,7 +140,7 @@ Invoke-WebRequest -UseBasicParsing -Method POST http://localhost:9998/api/v1/spa
 
 ## 5. Log File
 
-`%APPDATA%\SpaceEngineers\MySpawnerController.log`
+`%APPDATA%\SpaceEngineers\GridSpawner.Plugin.log`
 
 Look for:
 ```

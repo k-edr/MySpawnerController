@@ -22,7 +22,7 @@ Start-Process -FilePath "D:\SteamLibrary\steamapps\common\SpaceEngineers\Bin64\S
 
 # 3. Launch Swagger in separate terminal
 Write-Host "[3/5] Launching Swagger UI..." -ForegroundColor Yellow
-$swaggerExe = "D:\SteamLibrary\steamapps\common\SpaceEngineers\Bin64\Plugins\Swagger\MySpawnerController.Swagger.exe"
+$swaggerExe = "D:\SteamLibrary\steamapps\common\SpaceEngineers\Bin64\Plugins\Swagger\GridSpawner.Swagger.exe"
 if (Test-Path $swaggerExe) {
     Start-Process -FilePath $swaggerExe
     Write-Host "  Swagger: http://localhost:9998/swagger" -ForegroundColor Cyan

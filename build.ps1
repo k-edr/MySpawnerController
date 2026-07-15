@@ -1,16 +1,16 @@
 $ErrorActionPreference = "Stop"
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 
-$sharedProject  = Join-Path $scriptDir "MySpawnerController.Shared"
-$apiProject     = Join-Path $scriptDir "MySpawnerController.Api"
-$mainProject    = Join-Path $scriptDir "MySpawnerController"
-$swaggerProject = Join-Path $scriptDir "MySpawnerController.Swagger"
+$sharedProject  = Join-Path $scriptDir "GridSpawner.Shared"
+$apiProject     = Join-Path $scriptDir "GridSpawner.Api"
+$mainProject    = Join-Path $scriptDir "GridSpawner.Plugin"
+$swaggerProject = Join-Path $scriptDir "GridSpawner.Swagger"
 $seBin64        = "D:\SteamLibrary\steamapps\common\SpaceEngineers\Bin64"
 $pluginsDir     = Join-Path $seBin64 "Plugins"
 $configXml      = Join-Path $pluginsDir "config.xml"
 
 Write-Host "============================================" -ForegroundColor Cyan
-Write-Host " MySpawnerController - Build and Deploy" -ForegroundColor Cyan
+Write-Host " GridSpawner.Plugin - Build and Deploy" -ForegroundColor Cyan
 Write-Host "============================================" -ForegroundColor Cyan
 Write-Host ""
 
@@ -65,8 +65,8 @@ if (-not $msbuild) {
 if (-not $msbuild -or -not (Test-Path $msbuild)) { Write-Error "MSBuild not found."; exit 1 }
 
 # --- 2. Build Shared project (netstandard2.0) ---
-Write-Host "[2/9] Building MySpawnerController.Shared..." -ForegroundColor Yellow
-$sharedCsproj = Join-Path $sharedProject "MySpawnerController.Shared.csproj"
+Write-Host "[2/9] Building GridSpawner.Shared..." -ForegroundColor Yellow
+$sharedCsproj = Join-Path $sharedProject "GridSpawner.Shared.csproj"
 
 $result = & $msbuild $sharedCsproj /p:Configuration=Release /t:Restore /v:minimal /nologo 2>&1
 if ($LASTEXITCODE -ne 0) { Write-Host "SHARED RESTORE FAILED" -ForegroundColor Red; Write-Host ($result -join "`n"); exit 1 }
@@ -76,8 +76,8 @@ if ($LASTEXITCODE -ne 0) { Write-Host "SHARED BUILD FAILED" -ForegroundColor Red
 Write-Host "  Shared Build OK" -ForegroundColor Green
 
 # --- 3. Build API project (netstandard2.0) ---
-Write-Host "[3/9] Building MySpawnerController.Api..." -ForegroundColor Yellow
-$apiCsproj = Join-Path $apiProject "MySpawnerController.Api.csproj"
+Write-Host "[3/9] Building GridSpawner.Api..." -ForegroundColor Yellow
+$apiCsproj = Join-Path $apiProject "GridSpawner.Api.csproj"
 
 $result = & $msbuild $apiCsproj /p:Configuration=Release /t:Restore /v:minimal /nologo 2>&1
 if ($LASTEXITCODE -ne 0) { Write-Host "API RESTORE FAILED" -ForegroundColor Red; Write-Host ($result -join "`n"); exit 1 }
@@ -87,16 +87,16 @@ if ($LASTEXITCODE -ne 0) { Write-Host "API BUILD FAILED" -ForegroundColor Red; W
 Write-Host "  API Build OK" -ForegroundColor Green
 
 # --- 4. Build main project (.NET Framework 4.8) ---
-Write-Host "[4/9] Building MySpawnerController..." -ForegroundColor Yellow
-$mainCsproj = Join-Path $mainProject "MySpawnerController.csproj"
+Write-Host "[4/9] Building GridSpawner.Plugin..." -ForegroundColor Yellow
+$mainCsproj = Join-Path $mainProject "GridSpawner.Plugin.csproj"
 
 $result = & $msbuild $mainCsproj /p:Configuration=Release /t:Rebuild /v:minimal /nologo 2>&1
 if ($LASTEXITCODE -ne 0) { Write-Host "MAIN BUILD FAILED" -ForegroundColor Red; Write-Host ($result -join "`n"); exit 1 }
 Write-Host "  Main Build OK" -ForegroundColor Green
 
 # --- 5. Build Swagger project (net8.0) ---
-Write-Host "[5/9] Building MySpawnerController.Swagger..." -ForegroundColor Yellow
-$swaggerCsproj = Join-Path $swaggerProject "MySpawnerController.Swagger.csproj"
+Write-Host "[5/9] Building GridSpawner.Swagger..." -ForegroundColor Yellow
+$swaggerCsproj = Join-Path $swaggerProject "GridSpawner.Swagger.csproj"
 
 $result = & $msbuild $swaggerCsproj /p:Configuration=Release /t:Restore /v:minimal /nologo 2>&1
 if ($LASTEXITCODE -ne 0) { Write-Host "SWAGGER RESTORE FAILED" -ForegroundColor Red; Write-Host ($result -join "`n"); exit 1 }
@@ -110,8 +110,8 @@ Write-Host ""
 Write-Host "[6/9] Copying DLLs..." -ForegroundColor Yellow
 
 # Main plugin DLL (with retry)
-$mainDllPath = Join-Path $pluginsDir "MySpawnerController.dll"
-$mainDll = Get-ChildItem -Path (Join-Path $mainProject "bin\Release") -Recurse -Filter "MySpawnerController.dll" -ErrorAction SilentlyContinue | Select-Object -First 1
+$mainDllPath = Join-Path $pluginsDir "GridSpawner.Plugin.dll"
+$mainDll = Get-ChildItem -Path (Join-Path $mainProject "bin\Release") -Recurse -Filter "GridSpawner.Plugin.dll" -ErrorAction SilentlyContinue | Select-Object -First 1
 if (-not $mainDll) { Write-Error "Main DLL not found"; exit 1 }
 
 $copied = $false
@@ -120,22 +120,22 @@ for ($i = 0; $i -lt 5; $i++) {
     catch { Write-Host "  Retry $($i+1)/5..." -ForegroundColor DarkYellow; Start-Sleep -Seconds 2 }
 }
 if (-not $copied) { Write-Error "Cannot copy main DLL - file locked."; exit 1 }
-Write-Host "  MySpawnerController.dll" -ForegroundColor Green
+Write-Host "  GridSpawner.Plugin.dll" -ForegroundColor Green
 
 # Shared DLL
 $sharedOut = Join-Path $sharedProject "bin\Release\netstandard2.0"
-$sharedDll = Join-Path $sharedOut "MySpawnerController.Shared.dll"
+$sharedDll = Join-Path $sharedOut "GridSpawner.Shared.dll"
 if (Test-Path $sharedDll) {
-    Copy-Item -Path $sharedDll -Destination (Join-Path $pluginsDir "MySpawnerController.Shared.dll") -Force
-    Write-Host "  MySpawnerController.Shared.dll" -ForegroundColor Green
+    Copy-Item -Path $sharedDll -Destination (Join-Path $pluginsDir "GridSpawner.Shared.dll") -Force
+    Write-Host "  GridSpawner.Shared.dll" -ForegroundColor Green
 }
 
 # API DLL
 $apiOut = Join-Path $apiProject "bin\Release\netstandard2.0"
-$apiDll = Join-Path $apiOut "MySpawnerController.Api.dll"
+$apiDll = Join-Path $apiOut "GridSpawner.Api.dll"
 if (Test-Path $apiDll) {
-    Copy-Item -Path $apiDll -Destination (Join-Path $pluginsDir "MySpawnerController.Api.dll") -Force
-    Write-Host "  MySpawnerController.Api.dll" -ForegroundColor Green
+    Copy-Item -Path $apiDll -Destination (Join-Path $pluginsDir "GridSpawner.Api.dll") -Force
+    Write-Host "  GridSpawner.Api.dll" -ForegroundColor Green
 }
 
 # System.Text.Json + deps
@@ -155,10 +155,10 @@ $swaggerOut = Join-Path $swaggerProject "bin\Release\net8.0"
 $swaggerDest = Join-Path $pluginsDir "Swagger"
 if (-not (Test-Path $swaggerDest)) { New-Item -ItemType Directory -Path $swaggerDest -Force | Out-Null }
 
-$swaggerExe = Join-Path $swaggerOut "MySpawnerController.Swagger.exe"
+$swaggerExe = Join-Path $swaggerOut "GridSpawner.Swagger.exe"
 if (Test-Path $swaggerExe) {
     Copy-Item -Path $swaggerExe -Destination $swaggerDest -Force
-    Write-Host "  MySpawnerController.Swagger.exe" -ForegroundColor Green
+    Write-Host "  GridSpawner.Swagger.exe" -ForegroundColor Green
     Get-ChildItem -Path $swaggerOut -Filter "*.dll" | ForEach-Object {
         Copy-Item -Path $_.FullName -Destination $swaggerDest -Force
     }
@@ -183,7 +183,7 @@ if (-not $pluginsNode) {
     $pluginConfig.AppendChild($pluginsNode) | Out-Null
 }
 
-$dllPath = Join-Path $pluginsDir "MySpawnerController.dll"
+$dllPath = Join-Path $pluginsDir "GridSpawner.Plugin.dll"
 $alreadyExists = $false
 foreach ($idNode in $pluginsNode.Id) {
     if ($idNode.'#text' -eq $dllPath) { $alreadyExists = $true; break }
@@ -205,7 +205,7 @@ Write-Host "[8/9] Done!" -ForegroundColor Green
 Write-Host ""
 Write-Host "  Plugins dir : $pluginsDir"
 Write-Host "  Config      : $configXml"
-Write-Host "  Log         : `$env:APPDATA\SpaceEngineers\MySpawnerController.log"
+Write-Host "  Log         : `$env:APPDATA\SpaceEngineers\GridSpawner.log"
 Write-Host ""
 Write-Host "  Launch game     : .\run_world.bat" -ForegroundColor Cyan
 Write-Host "  Launch swagger  : .\run_swagger.bat" -ForegroundColor Cyan
