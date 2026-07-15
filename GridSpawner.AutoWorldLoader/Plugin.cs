@@ -7,15 +7,12 @@ namespace GridSpawner.AutoWorldLoader
 {
     /// <summary>
     /// Auto-loads a saved world when the game reaches the main menu.
-    /// Configure world name in %APPDATA%\SpaceEngineers\GridSpawner.json
-    /// under "autoLoadWorld" key.
-    ///
-    /// Works by calling MySessionLoader via reflection — the same API
-    /// the game itself uses when clicking "Load Game" in the menu.
+    /// Configure via "autoLoadWorld" in %APPDATA%\SpaceEngineers\GridSpawner.json
     /// </summary>
     public class Plugin : IPlugin
     {
         private bool _loaded;
+        private int _frameCount;
         private string _worldName;
         private string _savePath;
 
@@ -26,10 +23,12 @@ namespace GridSpawner.AutoWorldLoader
         {
             try
             {
+                Log("=== AutoWorldLoader Init ===");
+
                 _worldName = ReadWorldName();
                 if (string.IsNullOrEmpty(_worldName))
                 {
-                    // No world configured — silently exit
+                    Log("autoLoadWorld not configured — disabled");
                     return;
                 }
 
@@ -41,15 +40,15 @@ namespace GridSpawner.AutoWorldLoader
 
                 if (!Directory.Exists(_savePath))
                 {
-                    Log($"Save not found: {_savePath}");
+                    Log($"ERROR: Save not found: {_savePath}");
                     return;
                 }
 
-                Log($"AutoWorldLoader ready. Will load: {_worldName}");
+                Log($"Ready. World: {_worldName}, Path: {_savePath}");
             }
             catch (Exception ex)
             {
-                Log($"Init error: {ex.Message}");
+                Log($"Init error: {ex}");
             }
         }
 
@@ -58,20 +57,32 @@ namespace GridSpawner.AutoWorldLoader
             if (_loaded || string.IsNullOrEmpty(_savePath))
                 return;
 
+            _frameCount++;
+
+            // Wait 180 frames (~3 sec @ 60fps) for the game to settle
+            if (_frameCount < 180)
+                return;
+
+            // Check every 60 frames
+            if (_frameCount % 60 != 0)
+                return;
+
             try
             {
-                // Only proceed if game is at main menu (no session loaded)
-                if (IsMainMenu())
+                var atMainMenu = IsAtMainMenu();
+                Log($"Frame {_frameCount}: atMainMenu={atMainMenu}");
+
+                if (atMainMenu)
                 {
-                    Log($"Main menu detected, loading world: {_worldName}");
+                    Log($"Loading world: {_worldName}");
                     LoadWorld(_savePath);
                     _loaded = true;
                 }
             }
             catch (Exception ex)
             {
-                Log($"Update error: {ex.Message}");
-                _loaded = true; // Don't retry on error
+                Log($"Update error: {ex}");
+                _loaded = true;
             }
         }
 
@@ -79,27 +90,24 @@ namespace GridSpawner.AutoWorldLoader
 
         // ── Detection ────────────────────────────────────────
 
-        private static bool IsMainMenu()
+        private static bool IsAtMainMenu()
         {
-            // Game is at main menu when the session is null and the game
-            // has finished initializing (MySandboxGame exists).
-            // Also check that we're not in the middle of loading.
-            var gameType = Type.GetType("Sandbox.MySandboxGame, Sandbox.Game");
-            if (gameType == null) return false;
-
-            var staticProp = gameType.GetProperty("Static", Flags);
-            var game = staticProp?.GetValue(null);
-            if (game == null) return false;
-
-            // Check IsLoaded or similar
-            var isLoadedProp = gameType.GetProperty("IsLoaded", Flags);
-            bool isLoaded = isLoadedProp != null && (bool)isLoadedProp.GetValue(game);
-            if (!isLoaded) return false;
-
-            // Session.Static is null when at main menu
+            // The simplest reliable check: MySession.Static is null when no world loaded
             var sessionType = Type.GetType("Sandbox.Game.World.MySession, Sandbox.Game");
-            var sessionProp = sessionType?.GetProperty("Static", Flags);
-            var session = sessionProp?.GetValue(null);
+            if (sessionType == null)
+            {
+                Log("  MySession type not found");
+                return false;
+            }
+
+            var staticProp = sessionType.GetProperty("Static", Flags);
+            if (staticProp == null)
+            {
+                Log("  MySession.Static property not found");
+                return false;
+            }
+
+            var session = staticProp.GetValue(null);
             return session == null;
         }
 
@@ -107,7 +115,6 @@ namespace GridSpawner.AutoWorldLoader
 
         private static void LoadWorld(string savePath)
         {
-            // MySessionLoader is in Sandbox.Game.World
             var loaderType = Type.GetType("Sandbox.Game.World.MySessionLoader, Sandbox.Game");
             if (loaderType == null)
             {
@@ -115,28 +122,27 @@ namespace GridSpawner.AutoWorldLoader
                 return;
             }
 
-            // Try method: LoadSingleplayerSession(string sessionPath)
-            var method = loaderType.GetMethod("LoadSingleplayerSession", Flags);
+            Log("MySessionLoader found.");
+
+            // Prefer LoadSessionByPath (single string parameter)
+            var method = loaderType.GetMethod("LoadSessionByPath", Flags);
             if (method != null)
             {
-                Log($"Calling LoadSingleplayerSession({savePath})");
+                Log($"Calling {method.Name}({savePath})");
                 method.Invoke(null, new object[] { savePath });
                 return;
             }
 
-            // Fallback: try LoadSession or StartSession
-            foreach (var m in loaderType.GetMethods(Flags))
+            // Fallback: LoadLastSession (Continue button equivalent)
+            method = loaderType.GetMethod("LoadLastSession", Flags);
+            if (method != null)
             {
-                var par = m.GetParameters();
-                if (par.Length == 1 && par[0].ParameterType == typeof(string))
-                {
-                    Log($"Trying fallback method: {m.Name}");
-                    m.Invoke(null, new object[] { savePath });
-                    return;
-                }
+                Log($"Calling {method.Name}()");
+                method.Invoke(null, null);
+                return;
             }
 
-            Log("ERROR: No suitable LoadSession method found");
+            Log("ERROR: No suitable method found");
         }
 
         // ── Config ───────────────────────────────────────────
@@ -149,17 +155,20 @@ namespace GridSpawner.AutoWorldLoader
 
             if (!File.Exists(configPath))
             {
-                Log("GridSpawner.json not found — auto-load disabled");
+                Log("GridSpawner.json not found");
                 return null;
             }
 
             try
             {
                 var json = File.ReadAllText(configPath);
-                // Simple JSON parsing (no dependency on System.Text.Json)
                 var key = "\"autoLoadWorld\"";
                 var idx = json.IndexOf(key, StringComparison.OrdinalIgnoreCase);
-                if (idx < 0) return null;
+                if (idx < 0)
+                {
+                    Log("autoLoadWorld key not found in config");
+                    return null;
+                }
 
                 var colonIdx = json.IndexOf(':', idx + key.Length);
                 if (colonIdx < 0) return null;
@@ -174,7 +183,7 @@ namespace GridSpawner.AutoWorldLoader
             }
             catch (Exception ex)
             {
-                Log($"Config read error: {ex.Message}");
+                Log($"Config read error: {ex}");
                 return null;
             }
         }

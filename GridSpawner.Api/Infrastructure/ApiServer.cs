@@ -14,7 +14,7 @@ namespace GridSpawner.Api.Infrastructure;
 /// </summary>
 public sealed class ApiServer : IDisposable
 {
-    private readonly HttpListener _listener;
+    private HttpListener _listener;
     private readonly ISpawnService _spawnService;
     private readonly SpawnOrchestrator _orchestrator;
     private readonly AppConfig _config;
@@ -34,18 +34,42 @@ public sealed class ApiServer : IDisposable
 
     public void Start()
     {
-        _listener.Start();
+        try
+        {
+            _listener.Start();
+            _log($"[ApiServer] Listening on port {_config.ApiPort}");
+        }
+        catch (HttpListenerException ex)
+        {
+            // Prefix already registered (leftover from previous process).
+            // Create a fresh listener and try again.
+            _log($"[ApiServer] Port {_config.ApiPort} already registered, retrying with fresh listener...");
+
+            try
+            {
+                _listener.Close();
+                _listener = new HttpListener();
+                _listener.Prefixes.Add($"http://localhost:{_config.ApiPort}/");
+                _listener.Start();
+                _log($"[ApiServer] Listening on port {_config.ApiPort}");
+            }
+            catch (Exception ex2)
+            {
+                _log($"[ApiServer] Cannot start listener: {ex2.Message}. API disabled.");
+                return;
+            }
+        }
+
         _running = true;
         _thread = new Thread(Listen) { IsBackground = true, Name = "ApiServer" };
         _thread.Start();
-        _log($"[ApiServer] Listening on port {_config.ApiPort}");
     }
 
     public void Dispose()
     {
         _running = false;
         try { _listener?.Stop(); } catch { }
-        _listener?.Close();
+        try { _listener?.Close(); } catch { }
     }
 
     private void Listen()
