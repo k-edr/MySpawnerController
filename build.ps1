@@ -85,10 +85,10 @@ if (-not $msbuild -or -not (Test-Path $msbuild)) { Write-Error "MSBuild not foun
 Write-Host "[2/8] Building GridSpawner.Shared..." -ForegroundColor Yellow
 $sharedCsproj = Join-Path $sharedProject "GridSpawner.Shared.csproj"
 
-$result = & $msbuild $sharedCsproj /p:Configuration=Release /t:Restore /v:minimal /nologo 2>&1
+$result = & $msbuild $sharedCsproj /p:Configuration=Release /p:SEBin64=$seBin64 /t:Restore /v:minimal /nologo 2>&1
 if ($LASTEXITCODE -ne 0) { Write-Host "SHARED RESTORE FAILED" -ForegroundColor Red; Write-Host ($result -join "`n"); exit 1 }
 
-$result = & $msbuild $sharedCsproj /p:Configuration=Release /t:Rebuild /v:minimal /nologo 2>&1
+$result = & $msbuild $sharedCsproj /p:Configuration=Release /p:SEBin64=$seBin64 /t:Rebuild /v:minimal /nologo 2>&1
 if ($LASTEXITCODE -ne 0) { Write-Host "SHARED BUILD FAILED" -ForegroundColor Red; Write-Host ($result -join "`n"); exit 1 }
 Write-Host "  Shared Build OK" -ForegroundColor Green
 
@@ -96,10 +96,10 @@ Write-Host "  Shared Build OK" -ForegroundColor Green
 Write-Host "[3/8] Building GridSpawner.Api..." -ForegroundColor Yellow
 $apiCsproj = Join-Path $apiProject "GridSpawner.Api.csproj"
 
-$result = & $msbuild $apiCsproj /p:Configuration=Release /t:Restore /v:minimal /nologo 2>&1
+$result = & $msbuild $apiCsproj /p:Configuration=Release /p:SEBin64=$seBin64 /t:Restore /v:minimal /nologo 2>&1
 if ($LASTEXITCODE -ne 0) { Write-Host "API RESTORE FAILED" -ForegroundColor Red; Write-Host ($result -join "`n"); exit 1 }
 
-$result = & $msbuild $apiCsproj /p:Configuration=Release /t:Rebuild /v:minimal /nologo 2>&1
+$result = & $msbuild $apiCsproj /p:Configuration=Release /p:SEBin64=$seBin64 /t:Rebuild /v:minimal /nologo 2>&1
 if ($LASTEXITCODE -ne 0) { Write-Host "API BUILD FAILED" -ForegroundColor Red; Write-Host ($result -join "`n"); exit 1 }
 Write-Host "  API Build OK" -ForegroundColor Green
 
@@ -107,7 +107,7 @@ Write-Host "  API Build OK" -ForegroundColor Green
 Write-Host "[4/8] Building GridSpawner.Plugin..." -ForegroundColor Yellow
 $mainCsproj = Join-Path $mainProject "GridSpawner.Plugin.csproj"
 
-$result = & $msbuild $mainCsproj /p:Configuration=Release /t:Rebuild /v:minimal /nologo 2>&1
+$result = & $msbuild $mainCsproj /p:Configuration=Release /p:SEBin64=$seBin64 /t:Rebuild /v:minimal /nologo 2>&1
 if ($LASTEXITCODE -ne 0) { Write-Host "MAIN BUILD FAILED" -ForegroundColor Red; Write-Host ($result -join "`n"); exit 1 }
 Write-Host "  Main Build OK" -ForegroundColor Green
 
@@ -115,10 +115,10 @@ Write-Host "  Main Build OK" -ForegroundColor Green
 Write-Host "[5/8] Building GridSpawner.Swagger..." -ForegroundColor Yellow
 $swaggerCsproj = Join-Path $swaggerProject "GridSpawner.Swagger.csproj"
 
-$result = & $msbuild $swaggerCsproj /p:Configuration=Release /t:Restore /v:minimal /nologo 2>&1
+$result = & $msbuild $swaggerCsproj /p:Configuration=Release /p:SEBin64=$seBin64 /t:Restore /v:minimal /nologo 2>&1
 if ($LASTEXITCODE -ne 0) { Write-Host "SWAGGER RESTORE FAILED" -ForegroundColor Red; Write-Host ($result -join "`n"); exit 1 }
 
-$result = & $msbuild $swaggerCsproj /p:Configuration=Release /t:Rebuild /v:minimal /nologo 2>&1
+$result = & $msbuild $swaggerCsproj /p:Configuration=Release /p:SEBin64=$seBin64 /t:Rebuild /v:minimal /nologo 2>&1
 if ($LASTEXITCODE -ne 0) { Write-Host "SWAGGER BUILD FAILED" -ForegroundColor Red; Write-Host ($result -join "`n"); exit 1 }
 Write-Host "  Swagger Build OK" -ForegroundColor Green
 Write-Host ""
