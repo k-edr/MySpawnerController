@@ -74,6 +74,7 @@ public static class HttpResponseHelper
             ctx.Response.ContentLength64 = data.Length;
             ctx.Response.OutputStream.Write(data, 0, data.Length);
             ctx.Response.OutputStream.Close();
+            ctx.Response.Close();
         }
         catch (Exception ex) { Log($"[HttpResponseHelper] Respond failed: {ex.Message}"); }
     }

@@ -10,7 +10,7 @@ public sealed class AppConfig
     [JsonPropertyName("apiScheme")]
     public string ApiScheme { get; set; } = AppDefaults.DefaultApiScheme;
 
-    /// <summary>HTTP host for listening. Default <c>+</c> (all interfaces).</summary>
+    /// <summary>HTTP host for listening. Default <c>localhost</c> (loopback only).</summary>
     [JsonPropertyName("apiHost")]
     public string ApiHost { get; set; } = AppDefaults.DefaultHost;
 

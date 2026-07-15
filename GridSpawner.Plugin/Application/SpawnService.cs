@@ -53,7 +53,7 @@ public sealed class SpawnService : ISpawnService, IDisposable
         }
 
         // ── World creation on main thread ──
-        var task = new MainThreadTask<List<GridDto>>();
+        using var task = new MainThreadTask<List<GridDto>>();
         string bpName = blueprintName;
         string dispName = displayName;
         Vector3D off = position;
@@ -85,7 +85,7 @@ public sealed class SpawnService : ISpawnService, IDisposable
 
     public IReadOnlyList<GridListItem> ListGrids()
     {
-        var task = new MainThreadTask<List<GridListItem>>();
+        using var task = new MainThreadTask<List<GridListItem>>();
         task.Process = () => task.Result = _tracker.ListGrids();
         _queue.Enqueue(task);
         if (!task.Done.Wait(_timeout))
@@ -98,7 +98,7 @@ public sealed class SpawnService : ISpawnService, IDisposable
 
     public GridDto GetGrid(long id)
     {
-        var task = new MainThreadTask<GridDto>();
+        using var task = new MainThreadTask<GridDto>();
         long entityId = id;
         task.Process = () => task.Result = _tracker.GetGrid(entityId);
         _queue.Enqueue(task);
@@ -112,7 +112,7 @@ public sealed class SpawnService : ISpawnService, IDisposable
 
     public bool DeleteGrid(long id)
     {
-        var task = new MainThreadTask<bool>();
+        using var task = new MainThreadTask<bool>();
         long entityId = id;
         task.Process = () => task.Result = _tracker.TryRemove(entityId);
         _queue.Enqueue(task);
@@ -122,7 +122,7 @@ public sealed class SpawnService : ISpawnService, IDisposable
 
     public IReadOnlyList<long> DeleteAllGrids()
     {
-        var task = new MainThreadTask<List<long>>();
+        using var task = new MainThreadTask<List<long>>();
         task.Process = () => task.Result = _tracker.RemoveAll();
         _queue.Enqueue(task);
         if (!task.Done.Wait(_timeout))
@@ -137,7 +137,7 @@ public sealed class SpawnService : ISpawnService, IDisposable
 
     public IReadOnlyList<TerminalBlockDto> GetGridBlocks(long gridId)
     {
-        var task = new MainThreadTask<List<TerminalBlockDto>>();
+        using var task = new MainThreadTask<List<TerminalBlockDto>>();
         long gid = gridId;
         task.Process = () => task.Result = DoGetBlocks(gid);
         _queue.Enqueue(task);
@@ -151,7 +151,7 @@ public sealed class SpawnService : ISpawnService, IDisposable
 
     public TerminalBlockDto GetBlockDetail(long gridId, int x, int y, int z)
     {
-        var task = new MainThreadTask<TerminalBlockDto>();
+        using var task = new MainThreadTask<TerminalBlockDto>();
         long gid = gridId;
         Vector3I pos = new(x, y, z);
         task.Process = () => task.Result = DoGetBlockDetail(gid, pos);
@@ -166,7 +166,7 @@ public sealed class SpawnService : ISpawnService, IDisposable
 
     public bool ExecuteBlockAction(long gridId, int x, int y, int z, string actionId)
     {
-        var task = new MainThreadTask<bool>();
+        using var task = new MainThreadTask<bool>();
         long gid = gridId;
         Vector3I pos = new(x, y, z);
         string act = actionId;
@@ -178,7 +178,7 @@ public sealed class SpawnService : ISpawnService, IDisposable
 
     public string GetBlockProperty(long gridId, int x, int y, int z, string propertyId)
     {
-        var task = new MainThreadTask<string>();
+        using var task = new MainThreadTask<string>();
         long gid = gridId;
         Vector3I pos = new(x, y, z);
         string prop = propertyId;
@@ -191,7 +191,7 @@ public sealed class SpawnService : ISpawnService, IDisposable
     public bool SetBlockProperty(long gridId, int x, int y, int z,
         string propertyId, string value)
     {
-        var task = new MainThreadTask<bool>();
+        using var task = new MainThreadTask<bool>();
         long gid = gridId;
         Vector3I pos = new(x, y, z);
         string prop = propertyId;
@@ -204,7 +204,7 @@ public sealed class SpawnService : ISpawnService, IDisposable
 
     public bool SetProgramCode(long gridId, int x, int y, int z, string code)
     {
-        var task = new MainThreadTask<bool>();
+        using var task = new MainThreadTask<bool>();
         long gid = gridId;
         Vector3I pos = new(x, y, z);
         string c = code;
@@ -220,7 +220,7 @@ public sealed class SpawnService : ISpawnService, IDisposable
 
     public bool WriteTextPanel(long gridId, int x, int y, int z, string text)
     {
-        var task = new MainThreadTask<bool>();
+        using var task = new MainThreadTask<bool>();
         long gid = gridId;
         Vector3I pos = new(x, y, z);
         string t = text;
@@ -236,7 +236,7 @@ public sealed class SpawnService : ISpawnService, IDisposable
 
     public bool RunProgram(long gridId, int x, int y, int z, string argument)
     {
-        var task = new MainThreadTask<bool>();
+        using var task = new MainThreadTask<bool>();
         long gid = gridId;
         Vector3I pos = new(x, y, z);
         string arg = argument;

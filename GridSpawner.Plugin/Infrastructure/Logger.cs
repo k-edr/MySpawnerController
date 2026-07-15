@@ -20,11 +20,10 @@ namespace GridSpawner.Plugin.Infrastructure
                 string dir = Path.GetDirectoryName(LogFilePath);
                 if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
                     Directory.CreateDirectory(dir);
-
-                File.WriteAllText(LogFilePath,
-                    $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] GridSpawner.Plugin plugin started{Environment.NewLine}");
             }
             catch { }
+
+            Info("GridSpawner.Plugin plugin started");
         }
 
         public static void Info(string message) => Write("INFO", message);
