@@ -5,6 +5,7 @@ $sharedProject  = Join-Path $scriptDir "GridSpawner.Shared"
 $apiProject     = Join-Path $scriptDir "GridSpawner.Api"
 $mainProject    = Join-Path $scriptDir "GridSpawner.Plugin"
 $swaggerProject = Join-Path $scriptDir "GridSpawner.Swagger"
+$autoloadProject = Join-Path $scriptDir "GridSpawner.AutoWorldLoader"
 $seBin64        = "D:\SteamLibrary\steamapps\common\SpaceEngineers\Bin64"
 $pluginsDir     = Join-Path $seBin64 "Plugins"
 $configXml      = Join-Path $pluginsDir "config.xml"
@@ -104,10 +105,21 @@ if ($LASTEXITCODE -ne 0) { Write-Host "SWAGGER RESTORE FAILED" -ForegroundColor 
 $result = & $msbuild $swaggerCsproj /p:Configuration=Release /t:Rebuild /v:minimal /nologo 2>&1
 if ($LASTEXITCODE -ne 0) { Write-Host "SWAGGER BUILD FAILED" -ForegroundColor Red; Write-Host ($result -join "`n"); exit 1 }
 Write-Host "  Swagger Build OK" -ForegroundColor Green
+
+# --- 6. Build AutoWorldLoader (.NET Framework 4.8) ---
+Write-Host "[6/9] Building GridSpawner.AutoWorldLoader..." -ForegroundColor Yellow
+$autoloadCsproj = Join-Path $autoloadProject "GridSpawner.AutoWorldLoader.csproj"
+if (Test-Path $autoloadCsproj) {
+    $result = & $msbuild $autoloadCsproj /p:Configuration=Release /t:Rebuild /v:minimal /nologo 2>&1
+    if ($LASTEXITCODE -ne 0) { Write-Host "AUTOLOAD BUILD FAILED" -ForegroundColor Red; Write-Host ($result -join "`n"); exit 1 }
+    Write-Host "  AutoWorldLoader Build OK" -ForegroundColor Green
+} else {
+    Write-Host "  Skipped (project not found)" -ForegroundColor DarkYellow
+}
 Write-Host ""
 
-# --- 6. Copy DLLs ---
-Write-Host "[6/9] Copying DLLs..." -ForegroundColor Yellow
+# --- 7. Copy DLLs ---
+Write-Host "[7/9] Copying DLLs..." -ForegroundColor Yellow
 
 # Main plugin DLL (with retry)
 $mainDllPath = Join-Path $pluginsDir "GridSpawner.Plugin.dll"
@@ -167,10 +179,18 @@ if (Test-Path $swaggerExe) {
     }
 }
 
+# AutoWorldLoader DLL
+$autoloadDllPath = Join-Path $pluginsDir "GridSpawner.AutoWorldLoader.dll"
+$autoloadDll = Get-ChildItem -Path (Join-Path $autoloadProject "bin\Release") -Recurse -Filter "GridSpawner.AutoWorldLoader.dll" -ErrorAction SilentlyContinue | Select-Object -First 1
+if ($autoloadDll) {
+    Copy-Item -Path $autoloadDll.FullName -Destination $autoloadDllPath -Force
+    Write-Host "  GridSpawner.AutoWorldLoader.dll" -ForegroundColor Green
+}
+
 Write-Host ""
 
-# --- 7. Update config.xml ---
-Write-Host "[7/9] Updating PluginLoader config.xml..." -ForegroundColor Yellow
+# --- 8. Update config.xml ---
+Write-Host "[8/9] Updating PluginLoader config.xml..." -ForegroundColor Yellow
 
 [xml]$config = Get-Content $configXml -Encoding UTF8
 
@@ -198,10 +218,24 @@ if (-not $alreadyExists) {
 } else {
     Write-Host "  Already registered - skipping" -ForegroundColor Gray
 }
+
+# Register AutoWorldLoader
+$autoloadDllRegPath = Join-Path $pluginsDir "GridSpawner.AutoWorldLoader.dll"
+$autoloadExists = $false
+foreach ($idNode in $pluginsNode.Id) {
+    if ($idNode.'#text' -eq $autoloadDllRegPath) { $autoloadExists = $true; break }
+}
+if (-not $autoloadExists -and (Test-Path $autoloadDllRegPath)) {
+    $newId = $config.CreateElement("Id")
+    $newId.InnerText = $autoloadDllRegPath
+    $pluginsNode.AppendChild($newId) | Out-Null
+    $config.Save($configXml)
+    Write-Host "  Added AutoWorldLoader: $autoloadDllRegPath" -ForegroundColor Green
+}
 Write-Host ""
 
-# --- 8. Summary ---
-Write-Host "[8/9] Done!" -ForegroundColor Green
+# --- 9. Summary ---
+Write-Host "[9/9] Done!" -ForegroundColor Green
 Write-Host ""
 Write-Host "  Plugins dir : $pluginsDir"
 Write-Host "  Config      : $configXml"

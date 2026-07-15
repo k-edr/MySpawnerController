@@ -20,10 +20,10 @@ Start-Sleep -Seconds 2
 
 $launcher = "D:\SteamLibrary\steamapps\common\SpaceEngineers\Bin64\SpaceEngineersLauncher.exe"
 if (-not (Test-Path $launcher)) { Write-Error "Launcher not found: $launcher"; exit 1 }
-Write-Host "  NOTE: Load world manually: Empty_World_In" -ForegroundColor DarkYellow
 Start-Process -FilePath $launcher
+Write-Host "  Game launched. AutoWorldLoader will load the configured world." -ForegroundColor Green
 
-# 3. Launch Swagger in separate terminal
+# 3. Launch Swagger
 Write-Host "[3/5] Launching Swagger UI..." -ForegroundColor Yellow
 $swaggerExe = "D:\SteamLibrary\steamapps\common\SpaceEngineers\Bin64\Plugins\Swagger\GridSpawner.Swagger.exe"
 if (Test-Path $swaggerExe) {
@@ -35,8 +35,7 @@ if (Test-Path $swaggerExe) {
 Write-Host ""
 
 # 4. Wait for world
-Write-Host "[4/5] Waiting for world load (polling game on port 9997)..." -ForegroundColor Yellow
-
+Write-Host "[4/5] Waiting for world load (polling port 9997)..." -ForegroundColor Yellow
 $ready = $false
 for ($i = 0; $i -lt 90; $i++) {
     try {
@@ -56,7 +55,7 @@ if (-not $ready) {
 Write-Host "  World loaded!" -ForegroundColor Green
 Write-Host ""
 
-# 5. Spawn
+# 5. Spawn test grids
 Write-Host "[5/5] Spawning test grids..." -ForegroundColor Yellow
 try {
     $spawn = Invoke-WebRequest -UseBasicParsing -Method POST -TimeoutSec 30 http://localhost:9997/api/v1/spawn-tests

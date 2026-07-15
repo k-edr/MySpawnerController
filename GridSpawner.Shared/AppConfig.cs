@@ -31,4 +31,8 @@ public sealed class AppConfig
     /// <summary>Max number of grids allowed in a single blueprint. Default 50.</summary>
     [JsonPropertyName("maxGridsPerBlueprint")]
     public int MaxGridsPerBlueprint { get; set; } = 50;
+
+    /// <summary>Auto-load this world on game startup (via GridSpawner.AutoWorldLoader plugin). null = disabled.</summary>
+    [JsonPropertyName("autoLoadWorld")]
+    public string AutoLoadWorld { get; set; }
 }
