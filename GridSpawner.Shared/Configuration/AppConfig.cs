@@ -7,12 +7,16 @@ namespace GridSpawner.Shared.Configuration;
 /// </summary>
 public sealed class AppConfig
 {
-    /// <summary>HTTP host for the game API. Default <see cref="AppDefaults.DefaultHost"/>.</summary>
     [JsonPropertyName("apiScheme")]
     public string ApiScheme { get; set; } = AppDefaults.DefaultApiScheme;
 
+    /// <summary>HTTP host for listening. Default <c>+</c> (all interfaces).</summary>
     [JsonPropertyName("apiHost")]
     public string ApiHost { get; set; } = AppDefaults.DefaultHost;
+
+    /// <summary>Host for display URLs. <c>+</c>/<c>*</c> → <c>localhost</c>.</summary>
+    [JsonIgnore]
+    public string DisplayHost => ApiHost == "+" || ApiHost == "*" ? "localhost" : ApiHost;
 
     [JsonPropertyName("apiPort")]
     public int ApiPort { get; set; } = AppDefaults.DefaultApiPort;

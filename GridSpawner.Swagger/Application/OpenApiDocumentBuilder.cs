@@ -30,7 +30,7 @@ public static class OpenApiDocumentBuilder
                 Version = "1.0.0",
                 Description = $"HTTP API for spawning Space Engineers grids from local blueprints. Game API runs on port {config.ApiPort}."
             },
-            Servers = [new OpenApiServer { Url = $"{config.ApiScheme}://{config.ApiHost}:{config.ApiPort}" }],
+            Servers = [new OpenApiServer { Url = $"{config.ApiScheme}://{config.DisplayHost}:{config.ApiPort}" }],
             Paths = BuildPaths(schemaRepo),
             Components = new OpenApiComponents { Schemas = schemaRepo.Schemas }
         };

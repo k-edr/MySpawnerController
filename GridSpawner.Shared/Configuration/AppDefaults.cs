@@ -29,7 +29,7 @@ public static class AppDefaults
     // ── Networking ──
 
     public const string DefaultApiScheme = "http";
-    public const string DefaultHost = "+";
+    public const string DefaultHost = "localhost";
     public const int DefaultApiPort = 9997;
     public const int DefaultSwaggerPort = 9998;
 

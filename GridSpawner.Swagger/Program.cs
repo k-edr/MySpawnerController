@@ -8,7 +8,7 @@ var config = LoadConfig();
 var doc = OpenApiDocumentBuilder.Build(config);
 
 var builder = WebApplication.CreateBuilder(args);
-builder.WebHost.UseUrls($"{config.ApiScheme}://{config.ApiHost}:{config.SwaggerPort}");
+builder.WebHost.UseUrls($"{config.ApiScheme}://{config.DisplayHost}:{config.SwaggerPort}");
 builder.Logging.SetMinimumLevel(LogLevel.Warning);
 builder.Services.AddSwaggerDocument(doc);
 

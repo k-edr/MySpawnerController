@@ -38,8 +38,8 @@ public static class SwaggerHostExtensions
         Console.WriteLine(" GridSpawner.Plugin Swagger UI");
         Console.WriteLine("============================================");
         Console.ResetColor();
-        Console.WriteLine($"  Swagger : {config.ApiScheme}://{config.ApiHost}:{config.SwaggerPort}/swagger");
-        Console.WriteLine($"  Game API : {config.ApiScheme}://{config.ApiHost}:{config.ApiPort}");
+        Console.WriteLine($"  Swagger : {config.ApiScheme}://{config.DisplayHost}:{config.SwaggerPort}/swagger");
+        Console.WriteLine($"  Game API : {config.ApiScheme}://{config.DisplayHost}:{config.ApiPort}");
         Console.WriteLine();
         Console.WriteLine("  Press Ctrl+C to stop (or close this window).");
         Console.WriteLine();
@@ -65,7 +65,7 @@ public static class SwaggerHostExtensions
   dot.textContent = 'Game: checking...';
   document.body.insertBefore(dot, document.body.firstChild);
 
-  fetch('{config.ApiScheme}://{config.ApiHost}:{config.ApiPort}/api/v1/health')
+  fetch('{config.ApiScheme}://{config.DisplayHost}:{config.ApiPort}/api/v1/health')
     .then(r => r.json())
     .then(d => {{
       dot.textContent = d.ready ? 'Game: connected' : 'Game: loading...';
