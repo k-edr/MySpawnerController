@@ -20,7 +20,8 @@ Start-Sleep -Seconds 2
 
 $launcher = "D:\SteamLibrary\steamapps\common\SpaceEngineers\Bin64\SpaceEngineersLauncher.exe"
 if (-not (Test-Path $launcher)) { Write-Error "Launcher not found: $launcher"; exit 1 }
-Start-Process -FilePath $launcher -ArgumentList '-world', 'Empty_World_In', '-skipintro'
+Write-Host "  NOTE: Load world manually: Empty_World_In" -ForegroundColor DarkYellow
+Start-Process -FilePath $launcher
 
 # 3. Launch Swagger in separate terminal
 Write-Host "[3/5] Launching Swagger UI..." -ForegroundColor Yellow
