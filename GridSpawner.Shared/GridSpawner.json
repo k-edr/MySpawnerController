@@ -4,7 +4,6 @@
   "swaggerCorsOrigin": "http://localhost:9998",
   "maxBlueprintFileSizeBytes": 52428800,
   "maxGridsPerBlueprint": 50,
-  "autoLoadWorld": "Empty_World_In",
   "apiKey": null,
   "blueprintsFolder": null
 }
