@@ -1,0 +1,273 @@
+<?xml version="1.0"?>
+<Definitions xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <ShipBlueprints>
+    <ShipBlueprint xsi:type="MyObjectBuilder_ShipBlueprintDefinition">
+      <Id Type="MyObjectBuilder_ShipBlueprintDefinition" Subtype="TestGrid_MultiConnectorGrid" />
+      <DisplayName>AIBaster</DisplayName>
+      <CubeGrids>
+        <CubeGrid>
+          <SubtypeName />
+          <EntityId>108136942244334630</EntityId>
+          <PersistentFlags>CastShadows InScene</PersistentFlags>
+          <Name>108136942244334630</Name>
+          <PositionAndOrientation>
+            <Position x="0" y="0" z="0" />
+            <Forward x="-0.9455585" y="0.00184851" z="0.3254465" />
+            <Up x="0.00164550822" y="0.9999982" z="-0.000899017847" />
+            <Orientation>
+              <X>0.0004087321</X>
+              <Y>0.814078033</Y>
+              <Z>-0.0008437545</Z>
+              <W>0.5807547</W>
+            </Orientation>
+          </PositionAndOrientation>
+          <LocalPositionAndOrientation xsi:nil="true" />
+          <GridSizeEnum>Small</GridSizeEnum>
+          <CubeBlocks>
+            <MyObjectBuilder_CubeBlock xsi:type="MyObjectBuilder_ShipConnector">
+              <SubtypeName>ConnectorMedium</SubtypeName>
+              <EntityId>99077407965043040</EntityId>
+              <Min x="-1" y="-1" z="0" />
+              <ColorMaskHSV x="0.122222222" y="-0.1" z="0.26" />
+              <SkinSubtypeId>Weldless</SkinSubtypeId>
+              <Owner>144115188075855895</Owner>
+              <DeformationRatio>0.5</DeformationRatio>
+              <ComponentContainer>
+                <Components>
+                  <ComponentData>
+                    <TypeId>MyInventoryBase</TypeId>
+                    <Component xsi:type="MyObjectBuilder_Inventory">
+                      <CanPutItems>true</CanPutItems>
+                      <Items />
+                      <nextItemId>0</nextItemId>
+                      <Volume>1.152</Volume>
+                      <Mass>9223372036854.775807</Mass>
+                      <MaxItemCount>2147483647</MaxItemCount>
+                      <Size xsi:nil="true" />
+                      <InventoryFlags>CanReceive CanSend</InventoryFlags>
+                      <RemoveEntityOnEmpty>false</RemoveEntityOnEmpty>
+                    </Component>
+                  </ComponentData>
+                  <ComponentData>
+                    <TypeId>MyTimerComponent</TypeId>
+                    <Component xsi:type="MyObjectBuilder_TimerComponent">
+                      <Repeat>true</Repeat>
+                      <TimeToEvent>0</TimeToEvent>
+                      <SetTimeMinutes>0</SetTimeMinutes>
+                      <TimerEnabled>true</TimerEnabled>
+                      <RemoveEntityOnTimer>false</RemoveEntityOnTimer>
+                      <TimerType>Frame10</TimerType>
+                      <FramesFromLastTrigger>30</FramesFromLastTrigger>
+                      <TimerTickInFrames>80</TimerTickInFrames>
+                      <IsSessionUpdateEnabled>false</IsSessionUpdateEnabled>
+                    </Component>
+                  </ComponentData>
+                </Components>
+              </ComponentContainer>
+              <ShowOnHUD>false</ShowOnHUD>
+              <ShowInTerminal>true</ShowInTerminal>
+              <ShowInToolbarConfig>true</ShowInToolbarConfig>
+              <ShowInInventory>true</ShowInInventory>
+              <NumberInGrid>1</NumberInGrid>
+              <Enabled>true</Enabled>
+              <ConnectedEntityId>87692409705784979</ConnectedEntityId>
+              <MasterToSlaveTransform>
+                <Position x="-0.048090282827615738" y="-0.014836311340332031" z="-0.99664151668548584" />
+                <Forward x="-2.97832457E-06" y="2.97455E-07" z="1" />
+                <Up x="-3.56367366E-07" y="1" z="-2.97456069E-07" />
+                <Orientation>
+                  <X>-1.7818391E-07</X>
+                  <Y>1</Y>
+                  <Z>-1.48727764E-07</Z>
+                  <W>1.48916229E-06</W>
+                </Orientation>
+              </MasterToSlaveTransform>
+              <MasterToSlaveGrid xsi:nil="true" />
+              <IsMaster>false</IsMaster>
+              <TradingEnabled>false</TradingEnabled>
+              <AutoUnlockTime>0</AutoUnlockTime>
+              <TimeOfConnection>5362</TimeOfConnection>
+              <IsParkingEnabled>true</IsParkingEnabled>
+              <IsPowerTransferOverrideEnabled>false</IsPowerTransferOverrideEnabled>
+              <IsApproaching>true</IsApproaching>
+              <IsConnecting>true</IsConnecting>
+            </MyObjectBuilder_CubeBlock>
+            <MyObjectBuilder_CubeBlock xsi:type="MyObjectBuilder_Reactor">
+              <SubtypeName>SmallBlockSmallGenerator</SubtypeName>
+              <EntityId>119770490455953629</EntityId>
+              <Min x="-1" y="-1" z="2" />
+              <ColorMaskHSV x="0.122222222" y="-0.1" z="0.26" />
+              <SkinSubtypeId>Weldless</SkinSubtypeId>
+              <Owner>144115188075855895</Owner>
+              <ShareMode>Faction</ShareMode>
+              <ComponentContainer>
+                <Components>
+                  <ComponentData>
+                    <TypeId>MyInventoryBase</TypeId>
+                    <Component xsi:type="MyObjectBuilder_Inventory">
+                      <CanPutItems>true</CanPutItems>
+                      <Items />
+                      <nextItemId>0</nextItemId>
+                      <Volume>0.125</Volume>
+                      <Mass>9223372036854.775807</Mass>
+                      <MaxItemCount>2147483647</MaxItemCount>
+                      <Size xsi:nil="true" />
+                      <InventoryFlags>CanReceive</InventoryFlags>
+                      <RemoveEntityOnEmpty>false</RemoveEntityOnEmpty>
+                    </Component>
+                  </ComponentData>
+                  <ComponentData>
+                    <TypeId>MyTimerComponent</TypeId>
+                    <Component xsi:type="MyObjectBuilder_TimerComponent">
+                      <Repeat>true</Repeat>
+                      <TimeToEvent>0</TimeToEvent>
+                      <SetTimeMinutes>0</SetTimeMinutes>
+                      <TimerEnabled>false</TimerEnabled>
+                      <RemoveEntityOnTimer>false</RemoveEntityOnTimer>
+                      <TimerType>Frame100</TimerType>
+                      <FramesFromLastTrigger>0</FramesFromLastTrigger>
+                      <TimerTickInFrames>900</TimerTickInFrames>
+                      <IsSessionUpdateEnabled>false</IsSessionUpdateEnabled>
+                    </Component>
+                  </ComponentData>
+                </Components>
+              </ComponentContainer>
+              <ShowOnHUD>false</ShowOnHUD>
+              <ShowInTerminal>true</ShowInTerminal>
+              <ShowInToolbarConfig>true</ShowInToolbarConfig>
+              <ShowInInventory>true</ShowInInventory>
+              <NumberInGrid>1</NumberInGrid>
+              <Enabled>true</Enabled>
+              <Capacity>1</Capacity>
+            </MyObjectBuilder_CubeBlock>
+          </CubeBlocks>
+          <DisplayName>TestGrid_MultiConnectorGrid</DisplayName>
+          <DestructibleBlocks>true</DestructibleBlocks>
+          <CreatePhysics>false</CreatePhysics>
+          <IsRespawnGrid>false</IsRespawnGrid>
+          <LocalCoordSys>0</LocalCoordSys>
+          <TargetingTargets />
+          <NPCGridClaimElapsed xsi:nil="true" />
+        </CubeGrid>
+        <CubeGrid>
+          <SubtypeName />
+          <EntityId>125351516868673368</EntityId>
+          <PersistentFlags>CastShadows InScene</PersistentFlags>
+          <Name>125351516868673368</Name>
+          <PositionAndOrientation>
+            <Position x="-0.4539768248796463" y="-0.013902187347412109" z="0.20711660385131836" />
+            <Forward x="0.9455596" y="-0.00184820918" z="-0.3254435" />
+            <Up x="0.00164534012" y="0.9999982" z="-0.0008985856" />
+            <Orientation>
+              <X>-0.0008435303</X>
+              <Y>-0.580756</Y>
+              <Z>-0.000408787746</Z>
+              <W>0.814077139</W>
+            </Orientation>
+          </PositionAndOrientation>
+          <LocalPositionAndOrientation xsi:nil="true" />
+          <GridSizeEnum>Small</GridSizeEnum>
+          <CubeBlocks>
+            <MyObjectBuilder_CubeBlock xsi:type="MyObjectBuilder_ShipConnector">
+              <SubtypeName>ConnectorMedium</SubtypeName>
+              <EntityId>87692409705784979</EntityId>
+              <Min x="-1" y="-1" z="0" />
+              <ColorMaskHSV x="0.122222222" y="-0.1" z="0.26" />
+              <SkinSubtypeId>Weldless</SkinSubtypeId>
+              <Owner>144115188075855895</Owner>
+              <DeformationRatio>0.5</DeformationRatio>
+              <ComponentContainer>
+                <Components>
+                  <ComponentData>
+                    <TypeId>MyInventoryBase</TypeId>
+                    <Component xsi:type="MyObjectBuilder_Inventory">
+                      <CanPutItems>true</CanPutItems>
+                      <Items />
+                      <nextItemId>0</nextItemId>
+                      <Volume>1.152</Volume>
+                      <Mass>9223372036854.775807</Mass>
+                      <MaxItemCount>2147483647</MaxItemCount>
+                      <Size xsi:nil="true" />
+                      <InventoryFlags>CanReceive CanSend</InventoryFlags>
+                      <RemoveEntityOnEmpty>false</RemoveEntityOnEmpty>
+                    </Component>
+                  </ComponentData>
+                  <ComponentData>
+                    <TypeId>MyTimerComponent</TypeId>
+                    <Component xsi:type="MyObjectBuilder_TimerComponent">
+                      <Repeat>true</Repeat>
+                      <TimeToEvent>0</TimeToEvent>
+                      <SetTimeMinutes>0</SetTimeMinutes>
+                      <TimerEnabled>true</TimerEnabled>
+                      <RemoveEntityOnTimer>false</RemoveEntityOnTimer>
+                      <TimerType>Frame10</TimerType>
+                      <FramesFromLastTrigger>50</FramesFromLastTrigger>
+                      <TimerTickInFrames>80</TimerTickInFrames>
+                      <IsSessionUpdateEnabled>false</IsSessionUpdateEnabled>
+                    </Component>
+                  </ComponentData>
+                </Components>
+              </ComponentContainer>
+              <ShowOnHUD>false</ShowOnHUD>
+              <ShowInTerminal>true</ShowInTerminal>
+              <ShowInToolbarConfig>true</ShowInToolbarConfig>
+              <ShowInInventory>true</ShowInInventory>
+              <NumberInGrid>1</NumberInGrid>
+              <Enabled>true</Enabled>
+              <ConnectedEntityId>99077407965043040</ConnectedEntityId>
+              <MasterToSlaveTransform>
+                <Position x="-0.048090282827615738" y="-0.014836311340332031" z="-0.99664151668548584" />
+                <Forward x="-2.97832457E-06" y="2.97455E-07" z="1" />
+                <Up x="-3.56367366E-07" y="1" z="-2.97456069E-07" />
+                <Orientation>
+                  <X>-1.7818391E-07</X>
+                  <Y>1</Y>
+                  <Z>-1.48727764E-07</Z>
+                  <W>1.48916229E-06</W>
+                </Orientation>
+              </MasterToSlaveTransform>
+              <MasterToSlaveGrid>
+                <OrientationOffset>
+                  <X>-1.7818391E-07</X>
+                  <Y>1</Y>
+                  <Z>-1.48727764E-07</Z>
+                  <W>1.48916229E-06</W>
+                </OrientationOffset>
+                <PositionOffset>
+                  <X>-0.0480910279</X>
+                  <Y>-0.0148362378</Y>
+                  <Z>-0.7466415</Z>
+                </PositionOffset>
+                <OrientationAsVector>
+                  <X>-1.7818391E-07</X>
+                  <Y>1</Y>
+                  <Z>-1.48727764E-07</Z>
+                  <W>1.48916229E-06</W>
+                </OrientationAsVector>
+              </MasterToSlaveGrid>
+              <IsMaster>true</IsMaster>
+              <TradingEnabled>false</TradingEnabled>
+              <AutoUnlockTime>0</AutoUnlockTime>
+              <TimeOfConnection>5362</TimeOfConnection>
+              <IsParkingEnabled>true</IsParkingEnabled>
+              <IsPowerTransferOverrideEnabled>false</IsPowerTransferOverrideEnabled>
+              <IsApproaching>true</IsApproaching>
+              <IsConnecting>true</IsConnecting>
+            </MyObjectBuilder_CubeBlock>
+          </CubeBlocks>
+          <DisplayName>Small Grid 2481</DisplayName>
+          <DestructibleBlocks>true</DestructibleBlocks>
+          <CreatePhysics>false</CreatePhysics>
+          <IsRespawnGrid>false</IsRespawnGrid>
+          <LocalCoordSys>0</LocalCoordSys>
+          <TargetingTargets />
+          <NPCGridClaimElapsed xsi:nil="true" />
+        </CubeGrid>
+      </CubeGrids>
+      <EnvironmentType>None</EnvironmentType>
+      <WorkshopId>0</WorkshopId>
+      <OwnerSteamId>76561199017018740</OwnerSteamId>
+      <Points>0</Points>
+    </ShipBlueprint>
+  </ShipBlueprints>
+</Definitions>
