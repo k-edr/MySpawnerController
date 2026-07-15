@@ -1,5 +1,6 @@
 using System.Collections.Generic;
-using GridSpawner.Shared;
+using GridSpawner.Shared.Configuration;
+using GridSpawner.Shared.Models;
 using VRageMath;
 
 namespace GridSpawner.Api.Application;

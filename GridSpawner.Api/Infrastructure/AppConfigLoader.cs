@@ -1,7 +1,8 @@
 using System;
 using System.IO;
 using System.Text.Json;
-using GridSpawner.Shared;
+using GridSpawner.Shared.Configuration;
+using GridSpawner.Shared.Models;
 
 namespace GridSpawner.Api.Infrastructure;
 

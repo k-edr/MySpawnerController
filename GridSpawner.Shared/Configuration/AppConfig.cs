@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace GridSpawner.Shared;
+namespace GridSpawner.Shared.Configuration;
 
 /// <summary>
 /// Application configuration stored in %APPDATA%\SpaceEngineers\GridSpawner.json

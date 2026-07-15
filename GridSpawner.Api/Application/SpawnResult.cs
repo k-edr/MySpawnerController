@@ -1,4 +1,5 @@
-using GridSpawner.Shared;
+using GridSpawner.Shared.Configuration;
+using GridSpawner.Shared.Models;
 
 namespace GridSpawner.Api.Application;
 

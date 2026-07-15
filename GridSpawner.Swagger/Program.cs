@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
-using GridSpawner.Shared;
+using GridSpawner.Shared.Configuration;
+using GridSpawner.Shared.Models;
 using GridSpawner.Swagger.Application;
 using GridSpawner.Swagger.Infrastructure;
 

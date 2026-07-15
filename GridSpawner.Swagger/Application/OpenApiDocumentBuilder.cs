@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Microsoft.OpenApi.Models;
-using GridSpawner.Shared;
+using GridSpawner.Shared.Configuration;
+using GridSpawner.Shared.Models;
 using Swashbuckle.AspNetCore.SwaggerGen;
 
 namespace GridSpawner.Swagger.Application;

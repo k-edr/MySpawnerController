@@ -4,7 +4,8 @@ using System.Net;
 using System.Text.RegularExpressions;
 using System.Threading;
 using GridSpawner.Api.Application;
-using GridSpawner.Shared;
+using GridSpawner.Shared.Configuration;
+using GridSpawner.Shared.Models;
 
 namespace GridSpawner.Api.Infrastructure;
 

@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace GridSpawner.Shared;
+namespace GridSpawner.Shared.Models;
 
 public sealed class BlockDto
 {

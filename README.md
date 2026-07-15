@@ -59,10 +59,10 @@ Invoke-WebRequest -UseBasicParsing http://localhost:9997/api/v1/health
 ## Архитектура
 
 ```
-GridSpawner.Shared/        — netstandard2.0: DTOs, AppConfig
-GridSpawner.Api/           — netstandard2.0: ISpawnService, ApiServer, routing
-GridSpawner.Plugin/        — .NET Framework 4.8: PluginLoader plugin, SpawnService
-GridSpawner.Swagger/       — .NET 8.0: Swagger UI (Swashbuckle, separate process)
+GridSpawner.Shared/        — netstandard2.0: Configuration/ + Models/ (DTOs)
+GridSpawner.Api/           — netstandard2.0: Application/ + Infrastructure/
+GridSpawner.Plugin/        — .NET 4.8: Application/ + Infrastructure/
+GridSpawner.Swagger/       — .NET 8.0: Application/ + Infrastructure/ (Swashbuckle)
 ```
 
 ## Логи

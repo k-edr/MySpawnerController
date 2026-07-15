@@ -1,6 +1,7 @@
 using System.IO;
 using System.Text.Json;
-using GridSpawner.Shared;
+using GridSpawner.Shared.Configuration;
+using GridSpawner.Shared.Models;
 using VRageMath;
 
 namespace GridSpawner.Api.Application;
