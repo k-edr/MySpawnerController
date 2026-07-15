@@ -1,29 +1,32 @@
-# GridSpawner — HTTP API for spawning grids
+# GridSpawner — HTTP API for Spawning Grids in Space Engineers
 
-Плагин поднимает JSON API на `localhost:9997`.
-Сваггер запускается **отдельным процессом** на `localhost:9998`.
+A Space Engineers plugin that starts a JSON API on `localhost:9997` for spawning,
+listing, and deleting grids from local blueprints. Swagger UI runs as a
+**separate process** on `localhost:9998`.
 
-## Быстрый старт (всё одной командой)
+## Quick Start (one command)
 
 ```
 .\run.bat
 ```
 
-Что делает:
-1. Билдит все 4 проекта
-2. Копирует DLL в `Bin64/Plugins/`
-3. Запускает игру (AutoWorldLoader загружает мир)
-4. Запускает сваггер в отдельном окне
-5. Ждёт загрузки мира
-6. Спавнит 3 тестовых грида
+This does:
+1. Builds all 4 projects
+2. Copies DLLs to `Bin64/Plugins/`
+3. Launches the game (AutoWorldLoader loads the configured world)
+4. Launches Swagger UI in a separate window
+5. Waits for world load
+6. Spawns 3 test grids
 
-## Настройка путей
+---
 
-Перед первым билдом скопируй шаблон и укажи свой путь к `Bin64`:
+## Path Configuration
+
+Before the first build, copy the template and set your `Bin64` path:
 
 ```powershell
 copy build-config.example.json build-config.json
-# отредактируй build-config.json
+# edit build-config.json
 ```
 
 ```json
@@ -32,15 +35,28 @@ copy build-config.example.json build-config.json
 }
 ```
 
-| Поле | Описание | Пример (Linux/Proton) |
-|------|----------|----------------------|
-| `seBin64` | Путь к `Bin64` игры | `"Z:/home/user/.steam/.../Bin64"` |
+| Field | Description | Example (Linux/Proton) |
+|-------|-------------|------------------------|
+| `seBin64` | Path to the game's `Bin64` directory | `"Z:/home/user/.steam/.../Bin64"` |
 
-Если файла нет — скрипты используют путь по умолчанию.
+**All paths that may need changing per environment:**
 
-## Runtime-конфиг (`%APPDATA%\SpaceEngineers\GridSpawner.json`)
+| File | Variable | What |
+|------|----------|------|
+| `build-config.json` | `seBin64` | Game `Bin64` directory |
+| `build.ps1` | (reads from `build-config.json`) | Build + deploy script |
+| `run.ps1` | (reads from `build-config.json`) | Build + run + test script |
+| `%APPDATA%\SpaceEngineers\GridSpawner.json` | `blueprintsFolder` | Override blueprints directory |
+| `%APPDATA%\SpaceEngineers\GridSpawner.json` | `apiPort` / `swaggerPort` | Port overrides |
 
-Создаётся автоматически при первом запуске плагина:
+> `build-config.json` is gitignored. Each developer keeps their own local copy.
+> `build-config.example.json` is the committed template.
+
+---
+
+## Runtime Config (`%APPDATA%\SpaceEngineers\GridSpawner.json`)
+
+Created automatically on first plugin start:
 
 ```json
 {
@@ -54,64 +70,78 @@ copy build-config.example.json build-config.json
 }
 ```
 
-| Поле | Описание |
-|------|----------|
-| `apiPort` | Порт JSON API |
-| `swaggerPort` | Порт Swagger UI |
-| `swaggerCorsOrigin` | CORS origin (менять если хост не localhost) |
-| `blueprintsFolder` | Переопределить папку чертежей (`null` = `%APPDATA%\SpaceEngineers\Blueprints\local`) |
-| `apiKey` | Ключ для защищённых эндпоинтов (`null` = без авторизации) |
-| `maxBlueprintFileSizeBytes` | Макс. размер `.sbc` файла (по умолчанию 50 МБ) |
-| `maxGridsPerBlueprint` | Макс. число гридов в одном чертеже |
+| Field | Description |
+|-------|-------------|
+| `apiPort` | JSON API port |
+| `swaggerPort` | Swagger UI port |
+| `swaggerCorsOrigin` | CORS origin (change if host is not localhost) |
+| `blueprintsFolder` | Override blueprints folder (`null` = `%APPDATA%\SpaceEngineers\Blueprints\local`) |
+| `apiKey` | API key for protected endpoints (`null` = no auth) |
+| `maxBlueprintFileSizeBytes` | Max `.sbc` file size (default 50 MB) |
+| `maxGridsPerBlueprint` | Max grids allowed in a single blueprint |
 
-## Только сборка
+---
+
+## Build Only
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File build.ps1
 ```
 
-## Порты
+---
 
-| Порт | Что | Кто |
-|------|-----|-----|
-| `9997` | JSON API (спавн, гриды, хелс) | Игровой модуль |
-| `9998` | Swagger UI | Отдельный процесс |
+## Ports
 
-## API Endpoints (все на порту 9997)
+| Port | What | Who |
+|------|------|-----|
+| `9997` | JSON API (spawn, grids, health) | In-game plugin |
+| `9998` | Swagger UI | Separate process |
 
-| Метод | Путь | Описание |
-|-------|------|----------|
+---
+
+## API Endpoints (port 9997)
+
+| Method | Path | Description |
+|--------|------|-------------|
 | `GET` | `/api/v1/health` | `{"ready": true/false}` |
-| `GET` | `/api/v1/blueprints` | Список чертежей |
-| `GET` | `/api/v1/grids` | Список заспавненных гридов |
-| `GET` | `/api/v1/grids/{id}` | Детали грида |
-| `DELETE` | `/api/v1/grids/{id}` | Удалить грид |
-| `POST` | `/api/v1/spawn` | Спавн грида `{"blueprint":"...", "position":{"x":0,"y":0,"z":0}}` |
-| `POST` | `/api/v1/spawn-tests` | Спавн 3 тестовых грида |
+| `GET` | `/api/v1/blueprints` | List blueprints |
+| `GET` | `/api/v1/grids` | List spawned grids |
+| `GET` | `/api/v1/grids/{id}` | Grid details |
+| `DELETE` | `/api/v1/grids/{id}` | Delete grid |
+| `POST` | `/api/v1/spawn` | Spawn grid `{"blueprint":"...", "position":{"x":0,"y":0,"z":0}}` |
+| `POST` | `/api/v1/spawn-tests` | Spawn 3 test grids |
 
-## Примеры PowerShell
+---
+
+## PowerShell Examples
 
 ```powershell
-# Спавн всех тестовых гридов
+# Spawn all test grids
 Invoke-WebRequest -UseBasicParsing -Method POST http://localhost:9997/api/v1/spawn-tests
 
-# Спавн с кастомной позицией
+# Spawn with custom position
 $body = '{"blueprint":"TestGrid_SingleConnector","displayName":"MyGrid","position":{"x":50,"y":0,"z":100}}'
 Invoke-WebRequest -UseBasicParsing -Method POST http://localhost:9997/api/v1/spawn -Body $body -ContentType "application/json"
 
-# Проверить здоровье
+# Health check
 Invoke-WebRequest -UseBasicParsing http://localhost:9997/api/v1/health
 ```
 
-## Архитектура
+---
+
+## Architecture
 
 ```
-GridSpawner.Shared/        — netstandard2.0: Configuration/ + Models/ (DTOs)
-GridSpawner.Api/           — netstandard2.0: Application/ + Infrastructure/
-GridSpawner.Plugin/        — .NET 4.8: Application/ + Infrastructure/
-GridSpawner.Swagger/       — .NET 8.0: Application/ + Infrastructure/ (Swashbuckle)
+GridSpawner.Shared/    — netstandard2.0: Configuration/ + Models/ (DTOs)
+GridSpawner.Api/       — netstandard2.0: Application/ + Infrastructure/
+GridSpawner.Plugin/    — .NET 4.8:      Application/ + Infrastructure/
+GridSpawner.Swagger/   — .NET 8.0:      Application/ + Infrastructure/ (Swashbuckle)
 ```
 
-## Логи
+Clean architecture with clear dependency direction: `Infrastructure → Application → Shared`.
+
+---
+
+## Logs
 
 `%APPDATA%\SpaceEngineers\GridSpawner.log`
