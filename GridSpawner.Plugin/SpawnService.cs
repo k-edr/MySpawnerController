@@ -26,6 +26,12 @@ namespace GridSpawner.Plugin
         private readonly ConcurrentDictionary<long, MyCubeGrid> _trackedGrids =
             new ConcurrentDictionary<long, MyCubeGrid>();
         private readonly TimeSpan _timeout = TimeSpan.FromSeconds(30);
+        private readonly AppConfig _config;
+
+        public SpawnService(AppConfig config)
+        {
+            _config = config;
+        }
 
         public bool IsReady => MySession.Static?.Ready == true;
 
@@ -137,10 +143,10 @@ namespace GridSpawner.Plugin
             {
                 Logger.Info($"Spawning: {task.BlueprintName} @ X:{task.Offset.X} Y:{task.Offset.Y} Z:{task.Offset.Z}");
 
-                var gridBuilders = BlueprintDeserializer.Deserialize(task.BpFile);
+                var gridBuilders = BlueprintDeserializer.Deserialize(task.BpFile, _config, out string error);
                 if (gridBuilders == null)
                 {
-                    Logger.Error($"Failed to deserialize: {task.BlueprintName}");
+                    Logger.Error($"Deserialize failed: {task.BlueprintName} — {error}");
                     task.Result = null;
                     return;
                 }

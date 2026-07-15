@@ -22,7 +22,7 @@ namespace GridSpawner.Plugin
             var config = AppConfigLoader.LoadOrCreate();
             Logger.Info($"Config: apiPort={config.ApiPort}, cors={config.SwaggerCorsOrigin}");
 
-            _spawnService = new SpawnService();
+            _spawnService = new SpawnService(config);
             _apiServer = new ApiServer(config, _spawnService, Logger.Info);
             _apiServer.Start();
         }

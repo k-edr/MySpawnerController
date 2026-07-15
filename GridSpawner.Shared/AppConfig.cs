@@ -23,4 +23,12 @@ public sealed class AppConfig
     /// <summary>API key for protected endpoints. null = no auth.</summary>
     [JsonPropertyName("apiKey")]
     public string ApiKey { get; set; }
+
+    /// <summary>Max blueprint .sbc file size in bytes. Default 50 MB.</summary>
+    [JsonPropertyName("maxBlueprintFileSizeBytes")]
+    public long MaxBlueprintFileSizeBytes { get; set; } = 50 * 1024 * 1024;
+
+    /// <summary>Max number of grids allowed in a single blueprint. Default 50.</summary>
+    [JsonPropertyName("maxGridsPerBlueprint")]
+    public int MaxGridsPerBlueprint { get; set; } = 50;
 }
