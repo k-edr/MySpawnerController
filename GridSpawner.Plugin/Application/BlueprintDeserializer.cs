@@ -5,7 +5,7 @@ using GridSpawner.Shared;
 using VRage.Game;
 using VRage.ObjectBuilders;
 
-namespace GridSpawner.Plugin
+namespace GridSpawner.Plugin.Application
 {
     /// <summary>
     /// Deserializes .sbc blueprint files into <see cref="MyObjectBuilder_CubeGrid"/> builders.

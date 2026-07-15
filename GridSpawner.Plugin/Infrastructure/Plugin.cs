@@ -1,7 +1,7 @@
 using System;
 using VRage.Plugins;
 
-namespace GridSpawner.Plugin
+namespace GridSpawner.Plugin.Infrastructure
 {
     /// <summary>
     /// Plugin entry point.

@@ -1,6 +1,6 @@
 using VRage.Game.ModAPI;
 
-namespace GridSpawner.Plugin
+namespace GridSpawner.Plugin.Application
 {
     /// <summary>
     /// Strategy for extracting name and type from <see cref="IMySlimBlock"/>.

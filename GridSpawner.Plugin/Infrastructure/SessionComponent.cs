@@ -1,9 +1,10 @@
 using GridSpawner.Api.Infrastructure;
+using GridSpawner.Plugin.Application;
 using VRage.Game;
 using VRage.Game.Components;
 using VRage.ObjectBuilders;
 
-namespace GridSpawner.Plugin
+namespace GridSpawner.Plugin.Infrastructure
 {
     /// <summary>
     /// Session component: starts JSON API server.

@@ -1,7 +1,7 @@
 using System;
 using VRage.Game.ModAPI;
 
-namespace GridSpawner.Plugin
+namespace GridSpawner.Plugin.Application
 {
     /// <summary>
     /// Extracts info from armor / structural blocks (no <see cref="IMySlimBlock.FatBlock"/>).

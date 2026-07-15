@@ -2,7 +2,7 @@ using System;
 using System.IO;
 using VRage.Utils;
 
-namespace GridSpawner.Plugin
+namespace GridSpawner.Plugin.Infrastructure
 {
     /// <summary>
     /// Simple file-based logger for debugging plugin behavior.

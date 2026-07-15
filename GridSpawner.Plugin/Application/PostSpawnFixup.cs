@@ -1,9 +1,10 @@
 using System;
 using System.Reflection;
+using GridSpawner.Plugin.Infrastructure;
 using Sandbox.Game.Entities;
 using Sandbox.Game.World;
 
-namespace GridSpawner.Plugin
+namespace GridSpawner.Plugin.Application
 {
     /// <summary>
     /// Applies post-spawn fixup to a grid via reflection.

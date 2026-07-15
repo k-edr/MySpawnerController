@@ -1,10 +1,11 @@
 using System;
 using System.Collections.Generic;
+using GridSpawner.Plugin.Infrastructure;
 using GridSpawner.Shared;
 using Sandbox.Game.Entities;
 using VRage.Game.ModAPI;
 
-namespace GridSpawner.Plugin
+namespace GridSpawner.Plugin.Application
 {
     /// <summary>
     /// Maps <see cref="MyCubeGrid"/> entities to <see cref="GridDto"/> transport objects.

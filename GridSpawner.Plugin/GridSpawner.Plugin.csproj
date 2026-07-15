@@ -82,18 +82,18 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="BlueprintDeserializer.cs" />
-    <Compile Include="DeleteTask.cs" />
-    <Compile Include="FatBlockInfoExtractor.cs" />
-    <Compile Include="GridDtoMapper.cs" />
-    <Compile Include="IBlockInfoExtractor.cs" />
-    <Compile Include="PostSpawnFixup.cs" />
-    <Compile Include="SlimBlockInfoExtractor.cs" />
-    <Compile Include="SpawnTask.cs" />
-    <Compile Include="Logger.cs" />
-    <Compile Include="Plugin.cs" />
-    <Compile Include="SessionComponent.cs" />
-    <Compile Include="SpawnService.cs" />
+    <Compile Include="Application\BlueprintDeserializer.cs" />
+    <Compile Include="Application\DeleteTask.cs" />
+    <Compile Include="Application\FatBlockInfoExtractor.cs" />
+    <Compile Include="Application\GridDtoMapper.cs" />
+    <Compile Include="Application\IBlockInfoExtractor.cs" />
+    <Compile Include="Application\PostSpawnFixup.cs" />
+    <Compile Include="Application\SlimBlockInfoExtractor.cs" />
+    <Compile Include="Application\SpawnService.cs" />
+    <Compile Include="Application\SpawnTask.cs" />
+    <Compile Include="Infrastructure\Logger.cs" />
+    <Compile Include="Infrastructure\Plugin.cs" />
+    <Compile Include="Infrastructure\SessionComponent.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

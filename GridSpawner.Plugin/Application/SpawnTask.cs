@@ -3,7 +3,7 @@ using System.Threading;
 using GridSpawner.Shared;
 using VRageMath;
 
-namespace GridSpawner.Plugin
+namespace GridSpawner.Plugin.Application
 {
     internal sealed class SpawnTask
     {

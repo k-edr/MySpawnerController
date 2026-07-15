@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using GridSpawner.Api.Application;
+using GridSpawner.Plugin.Infrastructure;
 using GridSpawner.Shared;
 using Sandbox.Game.Entities;
 using Sandbox.Game.World;
@@ -13,7 +14,7 @@ using VRage.Game;
 using VRage.ObjectBuilders;
 using VRageMath;
 
-namespace GridSpawner.Plugin
+namespace GridSpawner.Plugin.Application
 {
     /// <summary>
     /// Implements <see cref="ISpawnService"/> for the API layer.

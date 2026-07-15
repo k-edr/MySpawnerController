@@ -1,6 +1,6 @@
 using System.Threading;
 
-namespace GridSpawner.Plugin
+namespace GridSpawner.Plugin.Application
 {
     internal sealed class DeleteTask
     {
