@@ -17,7 +17,17 @@ namespace GridSpawner.Plugin.Application
             if (!ValidateFile(bpFile, config, out error))
                 return null;
 
-            var definitions = DeserializeXml(bpFile);
+            MyObjectBuilder_Definitions definitions;
+            try
+            {
+                definitions = DeserializeXml(bpFile);
+            }
+            catch (Exception ex)
+            {
+                error = $"Failed to parse blueprint XML: {ex.Message}";
+                return null;
+            }
+
             if (definitions == null)
             {
                 error = "Failed to deserialize blueprint XML";
