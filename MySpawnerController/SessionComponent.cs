@@ -6,22 +6,24 @@ using VRage.ObjectBuilders;
 namespace MySpawnerController
 {
     /// <summary>
-    /// Session component: starts JSON API on port 9997.
-    /// Swagger UI is served by a separate process on port 9998.
+    /// Session component: starts JSON API server.
+    /// Reads config from %APPDATA%\SpaceEngineers\MySpawnerController.json
     /// </summary>
     [MySessionComponentDescriptor(MyUpdateOrder.AfterSimulation, 1000)]
     public class SessionComponent : MySessionComponentBase
     {
         private ApiServer _apiServer;
         private SpawnService _spawnService;
-        private const int Port = 9997;
 
         public override void Init(MyObjectBuilder_SessionComponent sessionComponent)
         {
             base.Init(sessionComponent);
 
+            var config = AppConfigLoader.LoadOrCreate();
+            Logger.Info($"Config: apiPort={config.ApiPort}, cors={config.SwaggerCorsOrigin}");
+
             _spawnService = new SpawnService();
-            _apiServer = new ApiServer(Port, _spawnService, Logger.Info);
+            _apiServer = new ApiServer(config, _spawnService, Logger.Info);
             _apiServer.Start();
         }
 

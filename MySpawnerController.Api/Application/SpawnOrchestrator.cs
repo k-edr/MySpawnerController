@@ -20,12 +20,13 @@ public sealed class SpawnOrchestrator
     private readonly ISpawnService _spawnService;
     private readonly string _blueprintsFolder;
 
-    public SpawnOrchestrator(ISpawnService spawnService)
+    public SpawnOrchestrator(ISpawnService spawnService, string blueprintsFolderOverride = null)
     {
         _spawnService = spawnService;
-        _blueprintsFolder = Path.Combine(
-            System.Environment.GetFolderPath(System.Environment.SpecialFolder.ApplicationData),
-            "SpaceEngineers", "Blueprints", "local");
+        _blueprintsFolder = blueprintsFolderOverride
+            ?? Path.Combine(
+                System.Environment.GetFolderPath(System.Environment.SpecialFolder.ApplicationData),
+                "SpaceEngineers", "Blueprints", "local");
     }
 
     public SpawnResult SpawnFromJson(string json)

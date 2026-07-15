@@ -17,17 +17,19 @@ public sealed class ApiServer : IDisposable
     private readonly HttpListener _listener;
     private readonly ISpawnService _spawnService;
     private readonly SpawnOrchestrator _orchestrator;
+    private readonly AppConfig _config;
     private readonly Action<string> _log;
     private Thread _thread;
     private volatile bool _running;
 
-    public ApiServer(int port, ISpawnService spawnService, Action<string> log = null)
+    public ApiServer(AppConfig config, ISpawnService spawnService, Action<string> log = null)
     {
+        _config = config;
         _spawnService = spawnService;
-        _orchestrator = new SpawnOrchestrator(spawnService);
+        _orchestrator = new SpawnOrchestrator(spawnService, config.BlueprintsFolder);
         _log = log ?? (_ => { });
         _listener = new HttpListener();
-        _listener.Prefixes.Add($"http://localhost:{port}/");
+        _listener.Prefixes.Add($"http://localhost:{config.ApiPort}/");
     }
 
     public void Start()
@@ -36,7 +38,7 @@ public sealed class ApiServer : IDisposable
         _running = true;
         _thread = new Thread(Listen) { IsBackground = true, Name = "ApiServer" };
         _thread.Start();
-        _log("[ApiServer] Listening on " + _listener.Prefixes);
+        _log($"[ApiServer] Listening on port {_config.ApiPort}");
     }
 
     public void Dispose()
@@ -70,39 +72,39 @@ public sealed class ApiServer : IDisposable
 
             if (method == "OPTIONS")
             {
-                HttpResponseHelper.Text(ctx, 204, "");
+                HttpResponseHelper.Text(ctx, 204, "", _config.SwaggerCorsOrigin);
                 return;
             }
 
             switch (path)
             {
                 case "api/v1/health" when method == "GET":
-                    HttpResponseHelper.Json(ctx, 200, new HealthResponse { Ready = _spawnService.IsReady });
+                    HttpResponseHelper.Json(ctx, 200, new HealthResponse { Ready = _spawnService.IsReady }, _config.SwaggerCorsOrigin);
                     return;
 
                 case "api/v1/blueprints" when method == "GET":
                     var blueprintsFolder = Path.Combine(
                         Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
                         "SpaceEngineers", "Blueprints", "local");
-                    HttpResponseHelper.Json(ctx, 200, _spawnService.ListBlueprints(blueprintsFolder));
+                    HttpResponseHelper.Json(ctx, 200, _spawnService.ListBlueprints(blueprintsFolder), _config.SwaggerCorsOrigin);
                     return;
 
                 case "api/v1/grids" when method == "GET":
-                    HttpResponseHelper.Json(ctx, 200, _spawnService.ListGrids());
+                    HttpResponseHelper.Json(ctx, 200, _spawnService.ListGrids(), _config.SwaggerCorsOrigin);
                     return;
 
                 case "api/v1/spawn" when method == "POST":
                     {
-                        using var reader = new System.IO.StreamReader(ctx.Request.InputStream, System.Text.Encoding.UTF8);
+                        using var reader = new StreamReader(ctx.Request.InputStream, System.Text.Encoding.UTF8);
                         var result = _orchestrator.SpawnFromJson(reader.ReadToEnd());
-                        HttpResponseHelper.Json(ctx, result.StatusCode, result.Body);
+                        HttpResponseHelper.Json(ctx, result.StatusCode, result.Body, _config.SwaggerCorsOrigin);
                     }
                     return;
 
                 case "api/v1/spawn-tests" when method == "POST":
                     {
                         var result = _orchestrator.SpawnTestGrids();
-                        HttpResponseHelper.Json(ctx, result.StatusCode, result.Body);
+                        HttpResponseHelper.Json(ctx, result.StatusCode, result.Body, _config.SwaggerCorsOrigin);
                     }
                     return;
 
@@ -119,12 +121,12 @@ public sealed class ApiServer : IDisposable
                     break;
             }
 
-            HttpResponseHelper.Json(ctx, 405, new ErrorResponse { Error = "Method Not Allowed" });
+            HttpResponseHelper.Json(ctx, 405, new ErrorResponse { Error = "Method Not Allowed" }, _config.SwaggerCorsOrigin);
         }
         catch (Exception ex)
         {
             _log("[ApiServer] ERROR: " + ex);
-            try { HttpResponseHelper.Json(ctx, 500, new ErrorResponse { Error = ex.Message }); } catch { }
+            try { HttpResponseHelper.Json(ctx, 500, new ErrorResponse { Error = ex.Message }, _config.SwaggerCorsOrigin); } catch { }
         }
     }
 
@@ -135,21 +137,21 @@ public sealed class ApiServer : IDisposable
             case "GET":
                 var grid = _spawnService.GetGrid(id);
                 if (grid == null)
-                    HttpResponseHelper.Json(ctx, 404, new ErrorResponse { Error = $"Grid {id} not found" });
+                    HttpResponseHelper.Json(ctx, 404, new ErrorResponse { Error = $"Grid {id} not found" }, _config.SwaggerCorsOrigin);
                 else
-                    HttpResponseHelper.Json(ctx, 200, grid);
+                    HttpResponseHelper.Json(ctx, 200, grid, _config.SwaggerCorsOrigin);
                 return;
 
             case "DELETE":
                 bool ok = _spawnService.DeleteGrid(id);
                 if (!ok)
-                    HttpResponseHelper.Json(ctx, 404, new ErrorResponse { Error = $"Grid {id} not found" });
+                    HttpResponseHelper.Json(ctx, 404, new ErrorResponse { Error = $"Grid {id} not found" }, _config.SwaggerCorsOrigin);
                 else
-                    HttpResponseHelper.Json(ctx, 200, new { deleted = id });
+                    HttpResponseHelper.Json(ctx, 200, new { deleted = id }, _config.SwaggerCorsOrigin);
                 return;
 
             default:
-                HttpResponseHelper.Text(ctx, 405, "Method Not Allowed");
+                HttpResponseHelper.Text(ctx, 405, "Method Not Allowed", _config.SwaggerCorsOrigin);
                 return;
         }
     }

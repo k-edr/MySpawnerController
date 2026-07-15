@@ -15,24 +15,27 @@ public static class HttpResponseHelper
         WriteIndented = false
     };
 
-    public static void Json(HttpListenerContext ctx, int code, object obj)
+    public static void Json(HttpListenerContext ctx, int code, object obj, string corsOrigin = null)
     {
         var json = JsonSerializer.Serialize(obj, JsonOpts);
-        Respond(ctx, code, json, "application/json");
+        Respond(ctx, code, json, "application/json", corsOrigin);
     }
 
-    public static void Text(HttpListenerContext ctx, int code, string body)
+    public static void Text(HttpListenerContext ctx, int code, string body, string corsOrigin = null)
     {
-        Respond(ctx, code, body, "text/plain; charset=utf-8");
+        Respond(ctx, code, body, "text/plain; charset=utf-8", corsOrigin);
     }
 
-    private static void Respond(HttpListenerContext ctx, int code, string body, string contentType)
+    private static void Respond(HttpListenerContext ctx, int code, string body, string contentType, string corsOrigin)
     {
         try
         {
-            ctx.Response.AddHeader("Access-Control-Allow-Origin", "http://localhost:9998");
-            ctx.Response.AddHeader("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS");
-            ctx.Response.AddHeader("Access-Control-Allow-Headers", "Content-Type");
+            if (!string.IsNullOrEmpty(corsOrigin))
+            {
+                ctx.Response.AddHeader("Access-Control-Allow-Origin", corsOrigin);
+                ctx.Response.AddHeader("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS");
+                ctx.Response.AddHeader("Access-Control-Allow-Headers", "Content-Type");
+            }
 
             byte[] data = Encoding.UTF8.GetBytes(body);
             ctx.Response.StatusCode = code;
