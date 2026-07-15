@@ -38,7 +38,10 @@ if (-not (Test-Path $mainProject))    { Write-Error "Main project dir not found:
 if (-not (Test-Path $swaggerProject)) { Write-Error "Swagger project dir not found: $swaggerProject"; exit 1 }
 if (-not (Test-Path $seBin64))        { Write-Error "SE Bin64 not found: $seBin64"; exit 1 }
 if (-not (Test-Path $pluginsDir))     { Write-Error "Plugins dir not found: $pluginsDir"; exit 1 }
-if (-not (Test-Path $configXml))      { Write-Error "config.xml not found: $configXml"; exit 1 }
+$hasConfigXml = Test-Path $configXml
+if (-not $hasConfigXml) {
+    Write-Host "  [Warning] config.xml not found at $configXml. Auto-registration will be skipped." -ForegroundColor Yellow
+}
 
 # --- Kill game if running ---
 $seProc = Get-Process -Name "SpaceEngineers" -ErrorAction SilentlyContinue
@@ -191,33 +194,37 @@ if (Test-Path $swaggerExe) {
 Write-Host ""
 
 # --- 7. Update config.xml ---
-Write-Host "[7/8] Updating PluginLoader config.xml..." -ForegroundColor Yellow
+if ($hasConfigXml) {
+    Write-Host "[7/8] Updating PluginLoader config.xml..." -ForegroundColor Yellow
 
-[xml]$config = Get-Content $configXml -Encoding UTF8
+    [xml]$config = Get-Content $configXml -Encoding UTF8
 
-$pluginConfig = $config.PluginConfig
-if (-not $pluginConfig) { Write-Error 'Invalid config.xml: no PluginConfig root'; exit 1 }
+    $pluginConfig = $config.PluginConfig
+    if (-not $pluginConfig) { Write-Error 'Invalid config.xml: no PluginConfig root'; exit 1 }
 
-$pluginsNode = $pluginConfig.Plugins
-if (-not $pluginsNode) {
-    $pluginsNode = $config.CreateElement("Plugins")
-    $pluginConfig.AppendChild($pluginsNode) | Out-Null
-}
+    $pluginsNode = $pluginConfig.Plugins
+    if (-not $pluginsNode) {
+        $pluginsNode = $config.CreateElement("Plugins")
+        $pluginConfig.AppendChild($pluginsNode) | Out-Null
+    }
 
-$dllPath = Join-Path $pluginsDir "GridSpawner.Plugin.dll"
-$alreadyExists = $false
-foreach ($idNode in $pluginsNode.Id) {
-    if ($idNode.'#text' -eq $dllPath) { $alreadyExists = $true; break }
-}
+    $dllPath = Join-Path $pluginsDir "GridSpawner.Plugin.dll"
+    $alreadyExists = $false
+    foreach ($idNode in $pluginsNode.Id) {
+        if ($idNode.'#text' -eq $dllPath) { $alreadyExists = $true; break }
+    }
 
-if (-not $alreadyExists) {
-    $newId = $config.CreateElement("Id")
-    $newId.InnerText = $dllPath
-    $pluginsNode.AppendChild($newId) | Out-Null
-    $config.Save($configXml)
-    Write-Host "  Added: $dllPath" -ForegroundColor Green
+    if (-not $alreadyExists) {
+        $newId = $config.CreateElement("Id")
+        $newId.InnerText = $dllPath
+        $pluginsNode.AppendChild($newId) | Out-Null
+        $config.Save($configXml)
+        Write-Host "  Added: $dllPath" -ForegroundColor Green
+    } else {
+        Write-Host "  Already registered - skipping" -ForegroundColor Gray
+    }
 } else {
-    Write-Host "  Already registered - skipping" -ForegroundColor Gray
+    Write-Host "[7/8] Skipping PluginLoader config.xml update (config.xml not found)" -ForegroundColor Yellow
 }
 
 Write-Host ""
