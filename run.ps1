@@ -1,7 +1,14 @@
 $ErrorActionPreference = "Stop"
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 
-$seBin64   = "D:\SteamLibrary\steamapps\common\SpaceEngineers\Bin64"
+$buildConfigPath = Join-Path $scriptDir "build-config.json"
+$seBin64 = "D:\SteamLibrary\steamapps\common\SpaceEngineers\Bin64"
+if (Test-Path $buildConfigPath) {
+    try {
+        $buildCfg = Get-Content $buildConfigPath -Raw | ConvertFrom-Json
+        if ($buildCfg.seBin64) { $seBin64 = $buildCfg.seBin64 }
+    } catch { }
+}
 $launcher  = Join-Path $seBin64 "SpaceEngineersLauncher.exe"
 $swagger   = Join-Path $seBin64 "Plugins\Swagger\GridSpawner.Swagger.exe"
 $apiUrl    = "http://localhost:9997"

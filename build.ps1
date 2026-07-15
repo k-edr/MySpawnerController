@@ -5,7 +5,15 @@ $sharedProject  = Join-Path $scriptDir "GridSpawner.Shared"
 $apiProject     = Join-Path $scriptDir "GridSpawner.Api"
 $mainProject    = Join-Path $scriptDir "GridSpawner.Plugin"
 $swaggerProject = Join-Path $scriptDir "GridSpawner.Swagger"
-$seBin64        = "D:\SteamLibrary\steamapps\common\SpaceEngineers\Bin64"
+$buildConfigPath = Join-Path $scriptDir "build-config.json"
+$seBin64 = "D:\SteamLibrary\steamapps\common\SpaceEngineers\Bin64"
+if (Test-Path $buildConfigPath) {
+    try {
+        $buildCfg = Get-Content $buildConfigPath -Raw | ConvertFrom-Json
+        if ($buildCfg.seBin64) { $seBin64 = $buildCfg.seBin64 }
+        Write-Host "  Build config: $seBin64" -ForegroundColor Gray
+    } catch { Write-Host "  WARN: Cannot parse build-config.json, using default" -ForegroundColor DarkYellow }
+}
 $pluginsDir     = Join-Path $seBin64 "Plugins"
 $configXml      = Join-Path $pluginsDir "config.xml"
 
