@@ -82,6 +82,11 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="BlueprintDeserializer.cs" />
+    <Compile Include="DeleteTask.cs" />
+    <Compile Include="GridDtoMapper.cs" />
+    <Compile Include="PostSpawnFixup.cs" />
+    <Compile Include="SpawnTask.cs" />
     <Compile Include="Logger.cs" />
     <Compile Include="Plugin.cs" />
     <Compile Include="SessionComponent.cs" />
