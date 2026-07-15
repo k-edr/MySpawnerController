@@ -323,13 +323,27 @@ internal static class TerminalBlockService
         try
         {
             var slim = grid.GetCubeBlock(position);
-            if (slim?.FatBlock is Sandbox.ModAPI.Ingame.IMyTextPanel panel)
+            var fat = slim?.FatBlock;
+            if (fat == null) return false;
+
+            // Preferred: IMyTextPanel (dedicated LCD blocks)
+            if (fat is Sandbox.ModAPI.Ingame.IMyTextPanel panel)
             {
                 panel.WriteText(text);
                 Logger.Info($"Text written to panel at {position} ({text.Length} chars)");
                 return true;
             }
-            Logger.Warn($"WriteTextPanel: block at {position} is not a text panel");
+
+            // Fallback: IMyTextSurfaceProvider (cockpits, PBs, cryo, buttons, etc.)
+            if (fat is Sandbox.ModAPI.Ingame.IMyTextSurfaceProvider provider)
+            {
+                var surface = provider.GetSurface(0);
+                surface?.WriteText(text);
+                Logger.Info($"Text written to surface[0] at {position} ({text.Length} chars)");
+                return true;
+            }
+
+            Logger.Warn($"WriteTextPanel: block at {position} has no text surface");
             return false;
         }
         catch (Exception ex)

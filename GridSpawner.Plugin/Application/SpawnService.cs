@@ -322,8 +322,6 @@ public sealed class SpawnService : ISpawnService, IDisposable
 
             if (ent is MyCubeGrid grid)
             {
-                PostSpawnFixup.Apply(grid);
-
                 if (!string.IsNullOrEmpty(displayName))
                 {
                     grid.DisplayName = displayName;
