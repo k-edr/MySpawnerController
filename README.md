@@ -8,10 +8,10 @@ listing, and deleting grids from local blueprints. Swagger UI runs as a
 
 Before setting up the project, make sure you have:
 1. **Windows OS**: The build and run scripts (`build.ps1`, `run.ps1`, `run.bat`) are adapted for Windows. On Linux/Proton, they may require modifications.
-2. **Space Engineers**: Installed on your machine.
+2. **[Space Engineers](https://store.steampowered.com/app/244850/Space_Engineers/)**: Installed on your machine.
    * *Default Steam Path (example):* `C:\Program Files (x86)\Steam\steamapps\common\SpaceEngineers\Bin64`
-3. **Space Engineers Plugin Loader**: Recommended. Having it installed and run at least once generates `Bin64/Plugins/config.xml` which allows the build script to automatically register the plugin. If missing, the build script will issue a warning and skip registration.
-4. **MSBuild**: Installed via Visual Studio (2019 or 2022) or Build Tools.
+3. **[Plugin Loader](https://github.com/sepluginloader/PluginLoader)**: Recommended. Having it installed and run at least once generates `Bin64/Plugins/config.xml` which allows the build script to automatically register the plugin. If missing, the build script will issue a warning and skip registration.
+4. **[MSBuild](https://visualstudio.microsoft.com/downloads/)**: Installed via Visual Studio (2019 or 2022) or Build Tools.
 
 ## Quick Start (one command)
 
