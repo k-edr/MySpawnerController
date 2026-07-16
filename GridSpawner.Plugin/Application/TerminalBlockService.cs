@@ -536,4 +536,138 @@ internal static class TerminalBlockService
 
         return null;
     }
+
+    // ── PB/LCD convenience (find-first-by-type) ──────────────
+
+    public static bool UploadScript(MyCubeGrid grid, string code)
+    {
+        try
+        {
+            var blocks = new List<IMySlimBlock>();
+            ((IMyCubeGrid)grid).GetBlocks(blocks, null);
+
+            foreach (var slim in blocks)
+            {
+                if (slim?.FatBlock is Sandbox.ModAPI.IMyProgrammableBlock pb)
+                {
+                    pb.ProgramData = code;
+                    Logger.Info($"UploadScript: {code.Length} chars to PB {pb.EntityId}");
+                    return true;
+                }
+            }
+
+            Logger.Warn("UploadScript: no programmable block found on grid");
+            return false;
+        }
+        catch (Exception ex)
+        {
+            Logger.Error($"UploadScript: {ex.Message}");
+            return false;
+        }
+    }
+
+    public static ScriptRunResult RunScript(MyCubeGrid grid, string argument)
+    {
+        try
+        {
+            var blocks = new List<IMySlimBlock>();
+            ((IMyCubeGrid)grid).GetBlocks(blocks, null);
+
+            foreach (var slim in blocks)
+            {
+                if (slim?.FatBlock is Sandbox.ModAPI.Ingame.IMyProgrammableBlock pb)
+                {
+                    bool ok = pb.TryRun(argument ?? "");
+                    string echo = "";
+                    try { echo = GetPbEcho(pb); }
+                    catch (Exception ex) { Logger.Warn($"RunScript echo: {ex.Message}"); }
+
+                    Logger.Info($"RunScript: arg=\"{argument}\" ok={ok} echo={echo.Length} chars");
+                    return new ScriptRunResult { Echo = echo, Success = ok };
+                }
+            }
+
+            Logger.Warn("RunScript: no programmable block found on grid");
+            return new ScriptRunResult { Echo = "", Success = false };
+        }
+        catch (Exception ex)
+        {
+            Logger.Error($"RunScript: {ex.Message}");
+            return new ScriptRunResult { Echo = "", Success = false };
+        }
+    }
+
+    public static string GetLcdContent(MyCubeGrid grid)
+    {
+        try
+        {
+            var blocks = new List<IMySlimBlock>();
+            ((IMyCubeGrid)grid).GetBlocks(blocks, null);
+
+            foreach (var slim in blocks)
+            {
+                var fat = slim?.FatBlock;
+                if (fat == null) continue;
+
+                // Skip PB blocks
+                if (fat is Sandbox.ModAPI.IMyProgrammableBlock)
+                    continue;
+
+                // Dedicated LCD panel
+                if (fat is Sandbox.ModAPI.Ingame.IMyTextPanel panel)
+                {
+                    var text = panel.GetText();
+                    if (!string.IsNullOrEmpty(text)) return text;
+                }
+
+                // Other text surface providers
+                if (fat is Sandbox.ModAPI.Ingame.IMyTextSurfaceProvider provider)
+                {
+                    var text = provider.GetSurface(0)?.GetText();
+                    if (!string.IsNullOrEmpty(text)) return text;
+                }
+            }
+
+            return "";
+        }
+        catch (Exception ex)
+        {
+            Logger.Error($"GetLcdContent: {ex.Message}");
+            return "";
+        }
+    }
+
+    private static string GetPbEcho(Sandbox.ModAPI.Ingame.IMyProgrammableBlock pb)
+    {
+        try
+        {
+            var type = pb.GetType();
+            foreach (var name in new[] { "Echo", "GetEcho", "LastEcho" })
+            {
+                var prop = type.GetProperty(name,
+                    System.Reflection.BindingFlags.Instance |
+                    System.Reflection.BindingFlags.Public |
+                    System.Reflection.BindingFlags.NonPublic);
+                if (prop != null && prop.PropertyType == typeof(string))
+                {
+                    var val = prop.GetValue(pb) as string;
+                    if (!string.IsNullOrEmpty(val)) return val;
+                }
+
+                var method = type.GetMethod(name,
+                    System.Reflection.BindingFlags.Instance |
+                    System.Reflection.BindingFlags.Public |
+                    System.Reflection.BindingFlags.NonPublic,
+                    null, Type.EmptyTypes, null);
+                if (method != null && method.ReturnType == typeof(string))
+                {
+                    var val = method.Invoke(pb, null) as string;
+                    if (!string.IsNullOrEmpty(val)) return val;
+                }
+            }
+        }
+        catch { }
+
+        return "";
+    }
 }

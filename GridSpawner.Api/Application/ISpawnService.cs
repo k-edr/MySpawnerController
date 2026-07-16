@@ -51,5 +51,16 @@ public interface ISpawnService
     /// <summary>Run a programmable block with an argument.</summary>
     bool RunProgram(long gridId, int x, int y, int z, string argument);
 
+    // ── PB/LCD convenience (by-type, no position needed) ──
+
+    /// <summary>Upload script code to the first PB found on the grid.</summary>
+    bool UploadScript(long gridId, string code);
+
+    /// <summary>Run the first PB on the grid with an argument. Returns echo output.</summary>
+    ScriptRunResult RunScript(long gridId, string argument);
+
+    /// <summary>Read text content from the first LCD/TextPanel on the grid.</summary>
+    string GetLcdContent(long gridId);
+
     bool IsReady { get; }
 }

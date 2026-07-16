@@ -53,6 +53,7 @@ public static class OpenApiDocumentBuilder
         generator.GenerateSchema(typeof(BlockActionDto), repo);
         generator.GenerateSchema(typeof(BlockPropertyDto), repo);
         generator.GenerateSchema(typeof(BlockActionRequest), repo);
+        generator.GenerateSchema(typeof(ScriptRunResult), repo);
     }
 
     private static OpenApiPaths BuildPaths(SchemaRepository repo)
@@ -109,7 +110,15 @@ public static class OpenApiDocumentBuilder
             ["/api/v1/grids/{id}/blocks/{x}/{y}/{z}/run"] = StringBodyOp(OperationType.Post,
                 "Run programmable block with argument", "runProgram", "argument"),
 
-            ["/api/v1/grids/{id}/blocks/{x}/{y}/{z}/properties/{propId}"] = BlockPropertyOp(repo)
+            ["/api/v1/grids/{id}/blocks/{x}/{y}/{z}/properties/{propId}"] = BlockPropertyOp(repo),
+
+            // ── PB/LCD convenience endpoints (by-type, no position) ──
+
+            ["/api/v1/grids/{id}/script"] = ScriptPath(repo),
+
+            ["/api/v1/grids/{id}/run"] = RunScriptPath(repo),
+
+            ["/api/v1/grids/{id}/lcd"] = LcdPath(repo)
         };
     }
 
@@ -384,6 +393,128 @@ public static class OpenApiDocumentBuilder
                     {
                         ["200"] = new OpenApiResponse { Description = "OK" },
                         ["404"] = Error("Block not found")
+                    }
+                }
+            }
+        };
+    }
+
+    // ── PB/LCD convenience path builders ───────────────────
+
+    private static OpenApiPathItem ScriptPath(SchemaRepository repo)
+    {
+        return new OpenApiPathItem
+        {
+            Operations = new Dictionary<OperationType, OpenApiOperation>
+            {
+                [OperationType.Put] = new OpenApiOperation
+                {
+                    Summary = "Upload script code to the first PB on the grid",
+                    OperationId = "uploadScript",
+                    Parameters = new[]
+                    {
+                        new OpenApiParameter
+                        {
+                            Name = "id", In = ParameterLocation.Path, Required = true,
+                            Schema = new OpenApiSchema { Type = "integer", Format = "int64" }
+                        }
+                    },
+                    RequestBody = new OpenApiRequestBody
+                    {
+                        Required = true,
+                        Content = { ["application/json"] = new OpenApiMediaType
+                        {
+                            Schema = new OpenApiSchema
+                            {
+                                Type = "object",
+                                Properties = new Dictionary<string, OpenApiSchema>
+                                {
+                                    ["code"] = new() { Type = "string" }
+                                }
+                            }
+                        }}
+                    },
+                    Responses = new OpenApiResponses
+                    {
+                        ["200"] = new OpenApiResponse { Description = "OK" },
+                        ["404"] = Error("No programmable block found")
+                    }
+                }
+            }
+        };
+    }
+
+    private static OpenApiPathItem RunScriptPath(SchemaRepository repo)
+    {
+        return new OpenApiPathItem
+        {
+            Operations = new Dictionary<OperationType, OpenApiOperation>
+            {
+                [OperationType.Post] = new OpenApiOperation
+                {
+                    Summary = "Run the first PB on the grid with an argument",
+                    OperationId = "runScript",
+                    Parameters = new[]
+                    {
+                        new OpenApiParameter
+                        {
+                            Name = "id", In = ParameterLocation.Path, Required = true,
+                            Schema = new OpenApiSchema { Type = "integer", Format = "int64" }
+                        }
+                    },
+                    RequestBody = new OpenApiRequestBody
+                    {
+                        Required = false,
+                        Content = { ["application/json"] = new OpenApiMediaType
+                        {
+                            Schema = new OpenApiSchema
+                            {
+                                Type = "object",
+                                Properties = new Dictionary<string, OpenApiSchema>
+                                {
+                                    ["argument"] = new() { Type = "string" }
+                                }
+                            }
+                        }}
+                    },
+                    Responses = new OpenApiResponses
+                    {
+                        ["200"] = Ok(Ref(nameof(ScriptRunResult))),
+                        ["404"] = Error("No programmable block found")
+                    }
+                }
+            }
+        };
+    }
+
+    private static OpenApiPathItem LcdPath(SchemaRepository repo)
+    {
+        return new OpenApiPathItem
+        {
+            Operations = new Dictionary<OperationType, OpenApiOperation>
+            {
+                [OperationType.Get] = new OpenApiOperation
+                {
+                    Summary = "Read text content from the first LCD panel on the grid",
+                    OperationId = "getLcdContent",
+                    Parameters = new[]
+                    {
+                        new OpenApiParameter
+                        {
+                            Name = "id", In = ParameterLocation.Path, Required = true,
+                            Schema = new OpenApiSchema { Type = "integer", Format = "int64" }
+                        }
+                    },
+                    Responses = new OpenApiResponses
+                    {
+                        ["200"] = Ok(new OpenApiSchema
+                        {
+                            Type = "object",
+                            Properties = new Dictionary<string, OpenApiSchema>
+                            {
+                                ["content"] = new() { Type = "string" }
+                            }
+                        })
                     }
                 }
             }

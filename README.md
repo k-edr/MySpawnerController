@@ -132,6 +132,14 @@ powershell -ExecutionPolicy Bypass -File build.ps1
 | `GET` | `/api/v1/grids/{id}/blocks/{x}/{y}/{z}/properties/{propId}` | Get property value |
 | `PUT` | `/api/v1/grids/{id}/blocks/{x}/{y}/{z}/properties/{propId}` | Set property `{"value":"true"}` |
 
+### PB / LCD Convenience (by-type)
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `PUT` | `/api/v1/grids/{id}/script` | Upload code to first PB `{"code":"..."}` |
+| `POST` | `/api/v1/grids/{id}/run` | Run first PB `{"argument":"..."}` → `{"echo":"...", "success":true}` |
+| `GET` | `/api/v1/grids/{id}/lcd` | Read text from first LCD → `{"content":"..."}` |
+
 ---
 
 ## PowerShell Examples

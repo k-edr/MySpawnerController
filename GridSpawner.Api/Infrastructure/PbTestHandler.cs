@@ -1,0 +1,57 @@
+using System.Net;
+using System.Text.RegularExpressions;
+using GridSpawner.Api.Application;
+using GridSpawner.Shared.Models;
+
+namespace GridSpawner.Api.Infrastructure;
+
+/// <summary>
+/// Registers PB/LCD convenience endpoints for integration testing.
+///   PUT  /api/v1/grids/{id}/script  — upload PB code
+///   POST /api/v1/grids/{id}/run     — run PB with argument
+///   GET  /api/v1/grids/{id}/lcd     — read LCD content
+/// </summary>
+public static class PbTestHandler
+{
+    public static void Register(Router router, ISpawnService spawn)
+    {
+        // PUT /api/v1/grids/{id}/script
+        router.Map<CodeBody>(
+            "api/v1/grids/{id}/script", "PUT",
+            (m, body) =>
+        {
+            if (body?.Code == null)
+                return RouteResult.BadRequest("Missing required field: code");
+
+            long gridId = long.Parse(m.Groups["id"].Value);
+            bool ok = spawn.UploadScript(gridId, body.Code);
+            return ok
+                ? RouteResult.Ok(new { success = true, length = body.Code.Length })
+                : RouteResult.NotFound("No programmable block found on grid");
+        });
+
+        // POST /api/v1/grids/{id}/run
+        router.Map<RunBody>(
+            "api/v1/grids/{id}/run", "POST",
+            (m, body) =>
+        {
+            long gridId = long.Parse(m.Groups["id"].Value);
+            string arg = body?.Argument ?? "";
+            var result = spawn.RunScript(gridId, arg);
+            return result.Success
+                ? RouteResult.Ok(new { echo = result.Echo, success = true, argument = arg })
+                : RouteResult.NotFound("No programmable block found or run failed");
+        });
+
+        // GET /api/v1/grids/{id}/lcd
+        router.Map("api/v1/grids/{id}/lcd", "GET", (ctx, m) =>
+        {
+            long gridId = long.Parse(m.Groups["id"].Value);
+            var content = spawn.GetLcdContent(gridId);
+            HttpResponseHelper.Json(ctx, 200, new { content }, null);
+        });
+    }
+
+    private sealed class CodeBody { public string Code { get; set; } }
+    private sealed class RunBody { public string Argument { get; set; } }
+}

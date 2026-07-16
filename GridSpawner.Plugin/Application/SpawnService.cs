@@ -250,6 +250,57 @@ public sealed class SpawnService : ISpawnService, IDisposable
         return task.Result;
     }
 
+    // ── PB/LCD convenience (by-type) ─────────────────────────
+
+    public bool UploadScript(long gridId, string code)
+    {
+        using var task = new MainThreadTask<bool>();
+        long gid = gridId;
+        string c = code;
+        task.Process = () =>
+        {
+            if (!_tracker.TryGet(gid, out var grid)) { task.Result = false; return; }
+            task.Result = TerminalBlockService.UploadScript(grid, c);
+        };
+        _queue.Enqueue(task);
+        if (!task.Done.Wait(_timeout)) return false;
+        return task.Result;
+    }
+
+    public ScriptRunResult RunScript(long gridId, string argument)
+    {
+        using var task = new MainThreadTask<ScriptRunResult>();
+        long gid = gridId;
+        string arg = argument;
+        task.Process = () =>
+        {
+            if (!_tracker.TryGet(gid, out var grid))
+            {
+                task.Result = new ScriptRunResult { Echo = "", Success = false };
+                return;
+            }
+            task.Result = TerminalBlockService.RunScript(grid, arg);
+        };
+        _queue.Enqueue(task);
+        if (!task.Done.Wait(_timeout))
+            return new ScriptRunResult { Echo = "", Success = false };
+        return task.Result;
+    }
+
+    public string GetLcdContent(long gridId)
+    {
+        using var task = new MainThreadTask<string>();
+        long gid = gridId;
+        task.Process = () =>
+        {
+            if (!_tracker.TryGet(gid, out var grid)) { task.Result = ""; return; }
+            task.Result = TerminalBlockService.GetLcdContent(grid);
+        };
+        _queue.Enqueue(task);
+        if (!task.Done.Wait(_timeout)) return "";
+        return task.Result;
+    }
+
     // ── Main-thread processing
     // ── Main-thread processing ───────────────────────────────
 

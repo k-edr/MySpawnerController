@@ -34,6 +34,7 @@ namespace GridSpawner.Plugin.Infrastructure
             GridHandler.Register(router, _spawnService);
             SpawnHandler.Register(router, _spawnService, config);
             BlockHandler.Register(router, _spawnService);
+            PbTestHandler.Register(router, _spawnService);
 
             _apiServer.Start();
         }
