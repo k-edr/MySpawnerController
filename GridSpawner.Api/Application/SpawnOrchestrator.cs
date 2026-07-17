@@ -32,7 +32,7 @@ public sealed class SpawnOrchestrator
         if (!_spawnService.IsReady)
             return SpawnResult.NotReady();
 
-        string bpPath = ResolveBlueprintPath(req.Blueprint);
+        string bpPath = ResolveBlueprintPath(_blueprintsFolder, req.Blueprint);
         if (!File.Exists(bpPath))
             return SpawnResult.NotFound($"Blueprint not found: {req.Blueprint}");
 
@@ -57,11 +57,11 @@ public sealed class SpawnOrchestrator
         catch (JsonException) { return null; }
     }
 
-    private string ResolveBlueprintPath(string blueprintName)
+    internal static string ResolveBlueprintPath(string blueprintsFolder, string blueprintName)
     {
-        var combinedPath = Path.Combine(_blueprintsFolder, blueprintName, AppDefaults.BlueprintExtension);
+        var combinedPath = Path.Combine(blueprintsFolder, blueprintName, AppDefaults.BlueprintExtension);
         var fullPath = Path.GetFullPath(combinedPath);
-        var baseDir = Path.GetFullPath(_blueprintsFolder);
+        var baseDir = Path.GetFullPath(blueprintsFolder);
 
         if (!fullPath.StartsWith(baseDir, StringComparison.OrdinalIgnoreCase))
             throw new System.Security.SecurityException("Invalid blueprint name: path traversal detected.");

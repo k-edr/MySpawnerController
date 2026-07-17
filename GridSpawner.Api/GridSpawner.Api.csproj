@@ -8,6 +8,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="GridSpawner.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\GridSpawner.Shared\GridSpawner.Shared.csproj" />
   </ItemGroup>
 
