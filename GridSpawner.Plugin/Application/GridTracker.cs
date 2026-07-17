@@ -55,12 +55,17 @@ internal sealed class GridTracker
     public int CleanupDead()
     {
         int removed = 0;
-        foreach (var kv in _grids)
+        // Collect keys first to avoid mutation during enumeration
+        var keys = new List<long>(_grids.Keys);
+        foreach (var key in keys)
         {
-            if (kv.Value == null || kv.Value.MarkedForClose)
+            if (_grids.TryGetValue(key, out var grid))
             {
-                if (_grids.TryRemove(kv.Key, out _))
-                    removed++;
+                if (grid == null || grid.MarkedForClose)
+                {
+                    if (_grids.TryRemove(key, out _))
+                        removed++;
+                }
             }
         }
         return removed;

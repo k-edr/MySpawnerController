@@ -258,7 +258,10 @@ internal static class TerminalBlockService
                             return true;
                         }
                     }
-                    catch { }
+                    catch (Exception ex)
+                    {
+                        Logger.Warn($"Generic SetProperty error for '{propertyId}': {ex.Message}");
+                    }
                     Logger.Warn($"SetProperty: unhandled type '{typeName}' for '{propertyId}'");
                     break;
             }

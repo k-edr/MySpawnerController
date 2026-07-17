@@ -382,6 +382,8 @@ public sealed class SpawnService : ISpawnService, IDisposable
                     displayName = null;
                 }
 
+                PostSpawnFixup.Apply(grid);
+
                 result.Add(GridDtoMapper.ToDto(grid));
                 _tracker.Track(grid);
                 Logger.Info($"  OK: {grid.DisplayName} Id={grid.EntityId}");

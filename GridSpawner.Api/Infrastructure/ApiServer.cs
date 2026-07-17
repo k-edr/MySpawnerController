@@ -48,9 +48,12 @@ public sealed class ApiServer : IDisposable
 
             try
             {
-                _listener.Close();
+                var oldListener = _listener;
                 _listener = new HttpListener();
                 _listener.Prefixes.Add($"{_config.ApiScheme}://{_config.ApiHost}:{_config.ApiPort}/");
+
+                try { oldListener?.Close(); } catch { }
+
                 _listener.Start();
                 _log($"[ApiServer] Listening on port {_config.ApiPort}");
             }
