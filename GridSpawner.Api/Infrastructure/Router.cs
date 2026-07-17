@@ -74,7 +74,7 @@ public sealed class Router
         {
             var body = HttpResponseHelper.ReadBody<TBody>(ctx);
             var result = handler(m, body);
-            HttpResponseHelper.Json(ctx, result.StatusCode, result.Body, null);
+            HttpResponseHelper.Json(ctx, result.StatusCode, result.Body, HttpResponseHelper.CorsOrigin);
         });
     }
 

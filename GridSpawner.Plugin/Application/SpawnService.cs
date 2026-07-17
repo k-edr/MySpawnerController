@@ -324,13 +324,16 @@ public sealed class SpawnService : ISpawnService, IDisposable
             }
         }
 
-        // Periodic dead-grid cleanup (every 10 seconds of sim time, regardless of FPS)
+        // Periodic dead-grid cleanup (every 10 seconds of sim time)
         if (MySession.Static != null)
         {
-            _cleanupAccumulator += MySession.Static.ElapsedGameTime.TotalSeconds;
-            if (_cleanupAccumulator >= CleanupIntervalSeconds)
+            double currentSimTime = MySession.Static.ElapsedGameTime.TotalSeconds;
+            if (_cleanupAccumulator == 0)
+                _cleanupAccumulator = currentSimTime;
+
+            if (currentSimTime - _cleanupAccumulator >= CleanupIntervalSeconds)
             {
-                _cleanupAccumulator = 0;
+                _cleanupAccumulator = currentSimTime;
                 int removed = _tracker.CleanupDead();
                 if (removed > 0)
                     Logger.Info($"CleanupDead: removed {removed} stale grids");

@@ -32,7 +32,16 @@ public sealed class SpawnOrchestrator
         if (!_spawnService.IsReady)
             return SpawnResult.NotReady();
 
-        string bpPath = ResolveBlueprintPath(_blueprintsFolder, req.Blueprint);
+        string bpPath;
+        try
+        {
+            bpPath = ResolveBlueprintPath(_blueprintsFolder, req.Blueprint);
+        }
+        catch (System.Security.SecurityException ex)
+        {
+            return SpawnResult.BadRequest(ex.Message);
+        }
+
         if (!File.Exists(bpPath))
             return SpawnResult.NotFound($"Blueprint not found: {req.Blueprint}");
 
