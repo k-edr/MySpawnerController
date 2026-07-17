@@ -16,7 +16,7 @@ public static class PbTestHandler
     public static void Register(Router router, ISpawnService spawn)
     {
         // PUT /api/v1/grids/{id}/script
-        router.Map<CodeBody>(
+        router.Map<UploadCodeRequest>(
             "api/v1/grids/{id}/script", "PUT",
             (m, body) =>
         {
@@ -31,7 +31,7 @@ public static class PbTestHandler
         });
 
         // POST /api/v1/grids/{id}/run
-        router.Map<RunBody>(
+        router.Map<RunScriptRequest>(
             "api/v1/grids/{id}/run", "POST",
             (m, body) =>
         {
@@ -51,7 +51,4 @@ public static class PbTestHandler
             HttpResponseHelper.Json(ctx, 200, new { content }, null);
         });
     }
-
-    private sealed class CodeBody { public string Code { get; set; } }
-    private sealed class RunBody { public string Argument { get; set; } }
 }

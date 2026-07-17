@@ -73,7 +73,7 @@ public static class BlockHandler
         });
 
         // PUT program
-        router.Map<CodeBody>(
+        router.Map<UploadCodeRequest>(
             "api/v1/grids/{id}/blocks/{x}/{y}/{z}/program", "PUT",
             (m, body) =>
         {
@@ -88,7 +88,7 @@ public static class BlockHandler
         });
 
         // PUT text
-        router.Map<TextBody>(
+        router.Map<WriteTextRequest>(
             "api/v1/grids/{id}/blocks/{x}/{y}/{z}/text", "PUT",
             (m, body) =>
         {
@@ -103,7 +103,7 @@ public static class BlockHandler
         });
 
         // POST run
-        router.Map<RunBody>(
+        router.Map<RunScriptRequest>(
             "api/v1/grids/{id}/blocks/{x}/{y}/{z}/run", "POST",
             (m, body) =>
         {
@@ -116,7 +116,7 @@ public static class BlockHandler
         });
 
         // PUT property
-        router.Map<PropertyBody>(
+        router.Map<SetPropertyRequest>(
             "api/v1/grids/{id}/blocks/{x}/{y}/{z}/properties/{propId}", "PUT",
             (m, body) =>
         {
@@ -139,9 +139,4 @@ public static class BlockHandler
             int.Parse(m.Groups["y"].Value),
             int.Parse(m.Groups["z"].Value)
         );
-
-    private sealed class PropertyBody { public string Value { get; set; } }
-    private sealed class CodeBody { public string Code { get; set; } }
-    private sealed class TextBody { public string Text { get; set; } }
-    private sealed class RunBody { public string Argument { get; set; } }
 }
