@@ -1,3 +1,4 @@
+using System;
 using System.IO;
 using System.Text.Json;
 using GridSpawner.Shared.Configuration;
@@ -56,8 +57,17 @@ public sealed class SpawnOrchestrator
         catch (JsonException) { return null; }
     }
 
-    private string ResolveBlueprintPath(string blueprintName) =>
-        Path.Combine(_blueprintsFolder, blueprintName, AppDefaults.BlueprintExtension);
+    private string ResolveBlueprintPath(string blueprintName)
+    {
+        var combinedPath = Path.Combine(_blueprintsFolder, blueprintName, AppDefaults.BlueprintExtension);
+        var fullPath = Path.GetFullPath(combinedPath);
+        var baseDir = Path.GetFullPath(_blueprintsFolder);
+
+        if (!fullPath.StartsWith(baseDir, StringComparison.OrdinalIgnoreCase))
+            throw new System.Security.SecurityException("Invalid blueprint name: path traversal detected.");
+
+        return fullPath;
+    }
 
     private SpawnResult DoSpawn(SpawnRequest req, string bpPath)
     {

@@ -232,6 +232,12 @@ internal static class TerminalBlockService
                     break;
 
                 case "String":
+                    {
+                        prop.As<string>().SetValue(terminal, value);
+                        Logger.Info($"Property '{propertyId}' = '{value}' on block at {position}");
+                        return true;
+                    }
+
                 case "StringBuilder":
                     {
                         var sb = new System.Text.StringBuilder(value);
