@@ -80,7 +80,8 @@ public static class BlockHandler
             if (req?.ActionId == null)
                 return RouteResult.BadRequest("Missing required field: actionId");
 
-            var (gridId, x, y, z) = ParseBlockCoords(m);
+            if (!TryParseBlockCoords(m, out var gridId, out var x, out var y, out var z))
+                return RouteResult.BadRequest("Invalid block coordinates");
             bool ok = spawn.ExecuteBlockAction(gridId, x, y, z, req.ActionId);
             return ok
                 ? RouteResult.Ok(new { success = true, action = req.ActionId })
@@ -160,11 +161,4 @@ public static class BlockHandler
             && int.TryParse(m.Groups["z"].Value, out z);
     }
 
-    private static (long gridId, int x, int y, int z) ParseBlockCoords(Match m) =>
-        (
-            long.Parse(m.Groups["id"].Value),
-            int.Parse(m.Groups["x"].Value),
-            int.Parse(m.Groups["y"].Value),
-            int.Parse(m.Groups["z"].Value)
-        );
 }

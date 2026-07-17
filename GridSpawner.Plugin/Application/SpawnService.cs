@@ -301,7 +301,6 @@ public sealed class SpawnService : ISpawnService, IDisposable
         return task.Result;
     }
 
-    // ── Main-thread processing
     // ── Main-thread processing ───────────────────────────────
 
     /// <summary>Must be called on the game main thread (UpdateAfterSimulation).</summary>
@@ -320,7 +319,8 @@ public sealed class SpawnService : ISpawnService, IDisposable
             }
             finally
             {
-                task.Done.Set();
+                try { task.Done.Set(); }
+                catch (ObjectDisposedException) { /* timed out on API side */ }
             }
         }
 

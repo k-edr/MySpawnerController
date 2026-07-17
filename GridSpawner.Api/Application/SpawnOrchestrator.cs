@@ -71,7 +71,8 @@ public sealed class SpawnOrchestrator
     {
         var combinedPath = Path.Combine(blueprintsFolder, blueprintName, AppDefaults.BlueprintExtension);
         var fullPath = Path.GetFullPath(combinedPath);
-        var baseDir = Path.GetFullPath(blueprintsFolder);
+        var baseDir = Path.GetFullPath(blueprintsFolder)
+            .TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;
 
         if (!fullPath.StartsWith(baseDir, StringComparison.OrdinalIgnoreCase))
             throw new System.Security.SecurityException("Invalid blueprint name: path traversal detected.");

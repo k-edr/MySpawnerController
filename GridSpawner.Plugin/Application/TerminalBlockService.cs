@@ -545,9 +545,9 @@ internal static class TerminalBlockService
         // Try "R G B" format
         var parts = value.Split(new[] { ' ', ',' }, StringSplitOptions.RemoveEmptyEntries);
         if (parts.Length == 3 &&
-            int.TryParse(parts[0].Trim('#'), out int r) &&
-            int.TryParse(parts[1], out int g) &&
-            int.TryParse(parts[2], out int b))
+            int.TryParse(parts[0].TrimStart('#'), out int r) &&
+            int.TryParse(parts[1].TrimStart('#'), out int g) &&
+            int.TryParse(parts[2].TrimStart('#'), out int b))
         {
             return new Color(r, g, b);
         }

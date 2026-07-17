@@ -23,7 +23,8 @@ public static class PbTestHandler
             if (body?.Code == null)
                 return RouteResult.BadRequest("Missing required field: code");
 
-            long gridId = long.Parse(m.Groups["id"].Value);
+            if (!long.TryParse(m.Groups["id"].Value, out long gridId))
+                return RouteResult.BadRequest("Invalid grid ID");
             bool ok = spawn.UploadScript(gridId, body.Code);
             return ok
                 ? RouteResult.Ok(new { success = true, length = body.Code.Length })
@@ -35,7 +36,8 @@ public static class PbTestHandler
             "api/v1/grids/{id}/run", "POST",
             (m, body) =>
         {
-            long gridId = long.Parse(m.Groups["id"].Value);
+            if (!long.TryParse(m.Groups["id"].Value, out long gridId))
+                return RouteResult.BadRequest("Invalid grid ID");
             string arg = body?.Argument ?? "";
             var result = spawn.RunScript(gridId, arg);
             return result.Success
@@ -46,7 +48,11 @@ public static class PbTestHandler
         // GET /api/v1/grids/{id}/lcd
         router.Map("api/v1/grids/{id}/lcd", "GET", (ctx, m) =>
         {
-            long gridId = long.Parse(m.Groups["id"].Value);
+            if (!long.TryParse(m.Groups["id"].Value, out long gridId))
+            {
+                HttpResponseHelper.Json(ctx, 400, new { error = "Invalid grid ID" }, null);
+                return;
+            }
             var content = spawn.GetLcdContent(gridId);
             HttpResponseHelper.Json(ctx, 200, new { content }, null);
         });
