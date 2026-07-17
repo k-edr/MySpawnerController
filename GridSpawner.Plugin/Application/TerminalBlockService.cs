@@ -96,6 +96,12 @@ internal static class TerminalBlockService
             if (terminal == null)
                 return null;
 
+            // Direct IMyTerminalBlock properties (not exposed via terminal system)
+            if (propertyId == "CustomData")
+                return terminal.CustomData ?? "";
+            if (propertyId == "CustomName")
+                return terminal.CustomName ?? "";
+
             var prop = terminal.GetProperty(propertyId);
             if (prop == null)
                 return null;
@@ -152,6 +158,20 @@ internal static class TerminalBlockService
             var terminal = slim.FatBlock as Sandbox.ModAPI.Ingame.IMyTerminalBlock;
             if (terminal == null)
                 return false;
+
+            // Direct IMyTerminalBlock properties (not exposed via terminal system)
+            if (propertyId == "CustomData")
+            {
+                terminal.CustomData = value;
+                Logger.Info($"CustomData set on block at {position}");
+                return true;
+            }
+            if (propertyId == "CustomName")
+            {
+                terminal.CustomName = value;
+                Logger.Info($"CustomName set to '{value}' on block at {position}");
+                return true;
+            }
 
             var prop = terminal.GetProperty(propertyId);
             if (prop == null)
