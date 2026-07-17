@@ -128,6 +128,8 @@ internal static class TerminalBlockService
                         case "Color":
                             var c = prop.AsColor().GetValue(terminal);
                             return $"#{c.R:X2}{c.G:X2}{c.B:X2}";
+                        case "StringBuilder":
+                            return prop.As<System.Text.StringBuilder>().GetValue(terminal).ToString();
                         case "Int64":
                             return prop.As<long>().GetValue(terminal).ToString();
                         case "Int32":

@@ -25,13 +25,23 @@ public static class BlockHandler
 
         router.Map("api/v1/grids/{id}/blocks", "GET", (ctx, m) =>
         {
-            long id = long.Parse(m.Groups["id"].Value);
+            if (!long.TryParse(m.Groups["id"].Value, out long id))
+            {
+                HttpResponseHelper.Json(ctx, 400,
+                    new { error = "Invalid grid ID" }, null);
+                return;
+            }
             HttpResponseHelper.Json(ctx, 200, spawn.GetGridBlocks(id), null);
         });
 
         router.Map("api/v1/grids/{id}/blocks/{x}/{y}/{z}", "GET", (ctx, m) =>
         {
-            var (gridId, x, y, z) = ParseBlockCoords(m);
+            if (!TryParseBlockCoords(m, out var gridId, out var x, out var y, out var z))
+            {
+                HttpResponseHelper.Json(ctx, 400,
+                    new { error = "Invalid block coordinates" }, null);
+                return;
+            }
             var block = spawn.GetBlockDetail(gridId, x, y, z);
             if (block == null)
                 HttpResponseHelper.Json(ctx, 404,
@@ -44,7 +54,12 @@ public static class BlockHandler
         router.Map("api/v1/grids/{id}/blocks/{x}/{y}/{z}/properties/{propId}", "GET",
             (ctx, m) =>
         {
-            var (gridId, x, y, z) = ParseBlockCoords(m);
+            if (!TryParseBlockCoords(m, out var gridId, out var x, out var y, out var z))
+            {
+                HttpResponseHelper.Json(ctx, 400,
+                    new { error = "Invalid block coordinates" }, null);
+                return;
+            }
             string propId = Uri.UnescapeDataString(m.Groups["propId"].Value);
             var val = spawn.GetBlockProperty(gridId, x, y, z, propId);
             if (val == null)
@@ -80,7 +95,8 @@ public static class BlockHandler
             if (body?.Code == null)
                 return RouteResult.BadRequest("Missing required field: code");
 
-            var (gridId, x, y, z) = ParseBlockCoords(m);
+            if (!TryParseBlockCoords(m, out var gridId, out var x, out var y, out var z))
+                return RouteResult.BadRequest("Invalid block coordinates");
             bool ok = spawn.SetProgramCode(gridId, x, y, z, body.Code);
             return ok
                 ? RouteResult.Ok(new { success = true, length = body.Code.Length })
@@ -95,7 +111,8 @@ public static class BlockHandler
             if (body?.Text == null)
                 return RouteResult.BadRequest("Missing required field: text");
 
-            var (gridId, x, y, z) = ParseBlockCoords(m);
+            if (!TryParseBlockCoords(m, out var gridId, out var x, out var y, out var z))
+                return RouteResult.BadRequest("Invalid block coordinates");
             bool ok = spawn.WriteTextPanel(gridId, x, y, z, body.Text);
             return ok
                 ? RouteResult.Ok(new { success = true, length = body.Text.Length })
@@ -107,7 +124,8 @@ public static class BlockHandler
             "api/v1/grids/{id}/blocks/{x}/{y}/{z}/run", "POST",
             (m, body) =>
         {
-            var (gridId, x, y, z) = ParseBlockCoords(m);
+            if (!TryParseBlockCoords(m, out var gridId, out var x, out var y, out var z))
+                return RouteResult.BadRequest("Invalid block coordinates");
             string arg = body?.Argument ?? "";
             bool ok = spawn.RunProgram(gridId, x, y, z, arg);
             return ok
@@ -123,13 +141,23 @@ public static class BlockHandler
             if (body?.Value == null)
                 return RouteResult.BadRequest("Missing required field: value");
 
-            var (gridId, x, y, z) = ParseBlockCoords(m);
+            if (!TryParseBlockCoords(m, out var gridId, out var x, out var y, out var z))
+                return RouteResult.BadRequest("Invalid block coordinates");
             string propId = Uri.UnescapeDataString(m.Groups["propId"].Value);
             bool ok = spawn.SetBlockProperty(gridId, x, y, z, propId, body.Value);
             return ok
                 ? RouteResult.Ok(new { propertyId = propId, value = body.Value, success = true })
                 : RouteResult.NotFound($"Failed to set property '{propId}'");
         });
+    }
+
+    private static bool TryParseBlockCoords(Match m, out long gridId, out int x, out int y, out int z)
+    {
+        gridId = 0; x = 0; y = 0; z = 0;
+        return long.TryParse(m.Groups["id"].Value, out gridId)
+            && int.TryParse(m.Groups["x"].Value, out x)
+            && int.TryParse(m.Groups["y"].Value, out y)
+            && int.TryParse(m.Groups["z"].Value, out z);
     }
 
     private static (long gridId, int x, int y, int z) ParseBlockCoords(Match m) =>

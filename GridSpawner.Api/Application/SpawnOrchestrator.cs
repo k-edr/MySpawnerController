@@ -27,7 +27,8 @@ public sealed class SpawnOrchestrator
     public SpawnResult SpawnFromJson(string json)
     {
         var req = DeserializeRequest(json);
-        if (req == null) return SpawnResult.BadRequest("Missing required field: blueprint");
+        if (req == null || string.IsNullOrWhiteSpace(req.Blueprint))
+            return SpawnResult.BadRequest("Missing required field: blueprint");
 
         if (!_spawnService.IsReady)
             return SpawnResult.NotReady();
