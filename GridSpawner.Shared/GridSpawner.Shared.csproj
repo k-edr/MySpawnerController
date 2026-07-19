@@ -10,4 +10,15 @@
   <ItemGroup>
     <PackageReference Include="System.Text.Json" Version="8.0.5" />
   </ItemGroup>
+
+  <!-- SEBin64 default -->
+  <PropertyGroup>
+    <SEBin64 Condition="'$(SEBin64)' == ''">D:\SteamLibrary\steamapps\common\SpaceEngineers\Bin64</SEBin64>
+  </PropertyGroup>
+
+  <Target Name="CopyToGamePlugins" AfterTargets="Build">
+    <Copy SourceFiles="$(OutputPath)$(AssemblyName).dll"
+          DestinationFolder="$(SEBin64)\Plugins\"
+          SkipUnchangedFiles="true" />
+  </Target>
 </Project>

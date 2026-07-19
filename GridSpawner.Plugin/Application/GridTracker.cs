@@ -135,7 +135,7 @@ internal sealed class GridTracker
         var found = new HashSet<MyCubeGrid>();
 
         var group = new List<IMyCubeGrid>();
-        MyAPIGateway.GridGroups.GetGroup(root, GridLinkTypeEnum.Physical, group);
+        MyAPIGateway.GridGroups.GetGroup(root, GridLinkTypeEnum.Logical, group);
 
         foreach (var g in group)
         {

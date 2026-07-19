@@ -101,5 +101,11 @@
     <Compile Include="Infrastructure\SessionComponent.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
+  <Target Name="CopyToGamePlugins" AfterTargets="Build">
+    <Copy SourceFiles="$(OutputPath)$(AssemblyName).dll"
+          DestinationFolder="$(SEBin64)\Plugins\"
+          SkipUnchangedFiles="true" />
+    <Message Text="Deployed $(AssemblyName).dll to $(SEBin64)\Plugins\" Importance="high" />
+  </Target>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

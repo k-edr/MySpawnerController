@@ -48,4 +48,10 @@
       <Private>False</Private>
     </Reference>
   </ItemGroup>
+
+  <Target Name="CopyToGamePlugins" AfterTargets="Build">
+    <Copy SourceFiles="$(OutputPath)$(AssemblyName).dll"
+          DestinationFolder="$(SEBin64)\Plugins\"
+          SkipUnchangedFiles="true" />
+  </Target>
 </Project>
