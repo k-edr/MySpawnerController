@@ -8,3 +8,4 @@ temp/
 nul
 build-config.json
 .agents/
+launchSettings.json
