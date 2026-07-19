@@ -4,6 +4,8 @@ using System.Collections.Generic;
 using GridSpawner.Plugin.Infrastructure;
 using GridSpawner.Shared.Models;
 using Sandbox.Game.Entities;
+using Sandbox.ModAPI;
+using VRage.Game.ModAPI;
 using VRageMath;
 
 namespace GridSpawner.Plugin.Application;
@@ -29,6 +31,15 @@ internal sealed class GridTracker
     {
         if (!_grids.TryRemove(id, out var grid))
             return false;
+
+        // Close subgrids (piston tops, rotor heads, wheels) before closing parent
+        foreach (var sub in FindConnectedSubgrids(grid))
+        {
+            _grids.TryRemove(sub.EntityId, out _);
+            try { sub.Close(); }
+            catch (Exception ex) { Logger.Warn($"GridTracker close subgrid {sub.EntityId}: {ex.Message}"); }
+        }
+
         try { grid?.Close(); }
         catch (Exception ex) { Logger.Warn($"GridTracker close {id}: {ex.Message}"); }
         return true;
@@ -44,6 +55,14 @@ internal sealed class GridTracker
         {
             if (_grids.TryRemove(id, out var grid))
             {
+                // Close subgrids first
+                foreach (var sub in FindConnectedSubgrids(grid))
+                {
+                    _grids.TryRemove(sub.EntityId, out _);
+                    try { sub.Close(); removed.Add(sub.EntityId); }
+                    catch (Exception ex) { Logger.Warn($"GridTracker close subgrid {sub.EntityId}: {ex.Message}"); }
+                }
+
                 try { grid?.Close(); removed.Add(id); }
                 catch (Exception ex) { Logger.Warn($"GridTracker close {id}: {ex.Message}"); }
             }
@@ -102,5 +121,32 @@ internal sealed class GridTracker
         if (!TryGet(id, out var grid))
             return null;
         return GridDtoMapper.ToDto(grid);
+    }
+
+    // ── Subgrid discovery ─────────────────────────────────────
+
+    /// <summary>
+    /// Recursively finds all subgrids connected to <paramref name="root"/>
+    /// through mechanical blocks (rotors, pistons, wheels).
+    /// Uses MyAPIGateway.GridGroups (Physical link) for reliable discovery.
+    /// </summary>
+    private static HashSet<MyCubeGrid> FindConnectedSubgrids(MyCubeGrid root)
+    {
+        var found = new HashSet<MyCubeGrid>();
+
+        var group = new List<IMyCubeGrid>();
+        MyAPIGateway.GridGroups.GetGroup(root, GridLinkTypeEnum.Physical, group);
+
+        foreach (var g in group)
+        {
+            if (g.EntityId == root.EntityId) continue;
+            if (g is MyCubeGrid sub && !sub.MarkedForClose)
+            {
+                found.Add(sub);
+                Logger.Info($"GridTracker: subgrid found {sub.EntityId} ({sub.DisplayName}) under {root.EntityId}");
+            }
+        }
+
+        return found;
     }
 }
