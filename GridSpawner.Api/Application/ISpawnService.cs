@@ -51,6 +51,9 @@ public interface ISpawnService
     /// <summary>Run a programmable block with an argument.</summary>
     bool RunProgram(long gridId, int x, int y, int z, string argument);
 
+    /// <summary>Read text from a ProgrammableBlock's built-in LCD surface (GetSurface(0).GetText()).</summary>
+    string GetPbSurfaceText(long gridId, int x, int y, int z);
+
     // ── PB/LCD convenience (by-type, no position needed) ──
 
     /// <summary>Upload script code to the first PB found on the grid.</summary>

@@ -405,6 +405,31 @@ internal static class TerminalBlockService
         }
     }
 
+    /// <summary>
+    /// Read text from a ProgrammableBlock's built-in LCD surface.
+    /// Uses IMyTextSurfaceProvider (which IMyProgrammableBlock inherits).
+    /// </summary>
+    public static string GetPbSurfaceText(MyCubeGrid grid, Vector3I position)
+    {
+        try
+        {
+            var slim = grid.GetCubeBlock(position);
+            if (slim?.FatBlock is Sandbox.ModAPI.Ingame.IMyTextSurfaceProvider provider)
+            {
+                var text = provider.GetSurface(0)?.GetText() ?? "";
+                Logger.Info($"PB surface text read at {position} ({text.Length} chars)");
+                return text;
+            }
+            Logger.Warn($"GetPbSurfaceText: block at {position} has no text surface");
+            return "";
+        }
+        catch (Exception ex)
+        {
+            Logger.Error($"GetPbSurfaceText: {ex.Message}");
+            return "";
+        }
+    }
+
     // ── DTO mapping ──
 
     private static TerminalBlockDto MapToDto(IMySlimBlock slim, IMyCubeBlock fat,

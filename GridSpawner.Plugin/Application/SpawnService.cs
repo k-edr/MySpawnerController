@@ -301,6 +301,21 @@ public sealed class SpawnService : ISpawnService, IDisposable
         return task.Result;
     }
 
+    public string GetPbSurfaceText(long gridId, int x, int y, int z)
+    {
+        using var task = new MainThreadTask<string>();
+        long gid = gridId;
+        Vector3I pos = new(x, y, z);
+        task.Process = () =>
+        {
+            if (!_tracker.TryGet(gid, out var grid)) { task.Result = ""; return; }
+            task.Result = TerminalBlockService.GetPbSurfaceText(grid, pos);
+        };
+        _queue.Enqueue(task);
+        if (!task.Done.Wait(_timeout)) return "";
+        return task.Result;
+    }
+
     // ── Main-thread processing ───────────────────────────────
 
     /// <summary>Must be called on the game main thread (UpdateAfterSimulation).</summary>

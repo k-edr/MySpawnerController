@@ -134,6 +134,21 @@ public static class BlockHandler
                 : RouteResult.NotFound("Block is not a programmable block");
         });
 
+        // GET surface text from PB (or any IMyTextSurfaceProvider)
+        router.Map("api/v1/grids/{id}/blocks/{x}/{y}/{z}/surface-text", "GET",
+            (ctx, m) =>
+        {
+            if (!TryParseBlockCoords(m, out var gridId, out var x, out var y, out var z))
+            {
+                HttpResponseHelper.Json(ctx, 400,
+                    new { error = "Invalid block coordinates" }, null);
+                return;
+            }
+            var text = spawn.GetPbSurfaceText(gridId, x, y, z);
+            HttpResponseHelper.Json(ctx, 200,
+                new { position = new { x, y, z }, text }, null);
+        });
+
         // PUT property
         router.Map<SetPropertyRequest>(
             "api/v1/grids/{id}/blocks/{x}/{y}/{z}/properties/{propId}", "PUT",
