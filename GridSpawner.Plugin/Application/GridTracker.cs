@@ -24,8 +24,21 @@ internal sealed class GridTracker
         _grids[grid.EntityId] = grid;
     }
 
-    public bool TryGet(long id, out MyCubeGrid grid) =>
-        _grids.TryGetValue(id, out grid) && grid != null && !grid.MarkedForClose;
+    public bool TryGet(long id, out MyCubeGrid grid)
+    {
+        grid = null;
+        if (_grids.TryGetValue(id, out grid) && grid != null && !grid.MarkedForClose)
+            return true;
+
+        VRage.ModAPI.IMyEntity ent;
+        if (MyAPIGateway.Entities.TryGetEntityById(id, out ent))
+        {
+            grid = ent as MyCubeGrid;
+            if (grid != null && !grid.MarkedForClose)
+                return true;
+        }
+        return false;
+    }
 
     public bool TryRemove(long id)
     {

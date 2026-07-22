@@ -660,14 +660,11 @@ internal static class TerminalBlockService
             var blocks = new List<IMySlimBlock>();
             ((IMyCubeGrid)grid).GetBlocks(blocks, null);
 
+            // First pass: dedicated LCD panels (not PBs)
             foreach (var slim in blocks)
             {
                 var fat = slim?.FatBlock;
                 if (fat == null) continue;
-
-                // Skip PB blocks
-                if (fat is Sandbox.ModAPI.IMyProgrammableBlock)
-                    continue;
 
                 // Dedicated LCD panel
                 if (fat is Sandbox.ModAPI.Ingame.IMyTextPanel panel)
@@ -675,8 +672,34 @@ internal static class TerminalBlockService
                     var text = panel.GetText();
                     if (!string.IsNullOrEmpty(text)) return text;
                 }
+            }
 
-                // Other text surface providers
+            // Second pass: programmable block surfaces (where PB scripts write their output)
+            foreach (var slim in blocks)
+            {
+                if (slim?.FatBlock is Sandbox.ModAPI.IMyProgrammableBlock pb)
+                {
+                    // PB's built-in display surface — scripts can write here via Me.GetSurface(0)
+                    try
+                    {
+                        if (pb is Sandbox.ModAPI.Ingame.IMyTextSurfaceProvider sp)
+                        {
+                            var text = sp.GetSurface(0)?.GetText();
+                            if (!string.IsNullOrEmpty(text)) return text;
+                        }
+                    }
+                    catch { }
+                }
+            }
+
+            // Third pass: other text surface providers
+            foreach (var slim in blocks)
+            {
+                var fat = slim?.FatBlock;
+                if (fat == null) continue;
+                if (fat is Sandbox.ModAPI.IMyProgrammableBlock) continue; // already checked above
+                if (fat is Sandbox.ModAPI.Ingame.IMyTextPanel) continue;   // already checked above
+
                 if (fat is Sandbox.ModAPI.Ingame.IMyTextSurfaceProvider provider)
                 {
                     var text = provider.GetSurface(0)?.GetText();
@@ -698,23 +721,33 @@ internal static class TerminalBlockService
         try
         {
             var type = pb.GetType();
-            foreach (var name in new[] { "Echo", "GetEcho", "LastEcho" })
+
+            // Try multiple field/property names (public, non-public, instance)
+            var flags = System.Reflection.BindingFlags.Instance |
+                        System.Reflection.BindingFlags.Public |
+                        System.Reflection.BindingFlags.NonPublic;
+
+            foreach (var name in new[] { "Echo", "GetEcho", "LastEcho", "m_echo", "_echo", "EchoText", "m_echoStringBuilder", "EchoOutput" })
             {
-                var prop = type.GetProperty(name,
-                    System.Reflection.BindingFlags.Instance |
-                    System.Reflection.BindingFlags.Public |
-                    System.Reflection.BindingFlags.NonPublic);
+                // Try field
+                var field = type.GetField(name, flags);
+                if (field != null)
+                {
+                    var val = field.GetValue(pb);
+                    if (val is string s && !string.IsNullOrEmpty(s)) return s;
+                    if (val is System.Text.StringBuilder sb && sb.Length > 0) return sb.ToString();
+                }
+
+                // Try property
+                var prop = type.GetProperty(name, flags);
                 if (prop != null && prop.PropertyType == typeof(string))
                 {
                     var val = prop.GetValue(pb) as string;
                     if (!string.IsNullOrEmpty(val)) return val;
                 }
 
-                var method = type.GetMethod(name,
-                    System.Reflection.BindingFlags.Instance |
-                    System.Reflection.BindingFlags.Public |
-                    System.Reflection.BindingFlags.NonPublic,
-                    null, Type.EmptyTypes, null);
+                // Try parameterless method
+                var method = type.GetMethod(name, flags, null, Type.EmptyTypes, null);
                 if (method != null && method.ReturnType == typeof(string))
                 {
                     var val = method.Invoke(pb, null) as string;
