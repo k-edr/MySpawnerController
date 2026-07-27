@@ -10,6 +10,9 @@ public sealed class ScriptRunResult
     [JsonPropertyName("echo")]
     public string Echo { get; set; } = "";
 
+    [JsonPropertyName("output")]
+    public string Output { get; set; } = "";
+
     [JsonPropertyName("success")]
     public bool Success { get; set; }
 }

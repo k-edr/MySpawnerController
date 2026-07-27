@@ -66,6 +66,7 @@ namespace GridSpawner.Tests
         public bool RunProgram(long gridId, int x, int y, int z, string argument) => false;
         public bool UploadScript(long gridId, string code) => false;
         public ScriptRunResult RunScript(long gridId, string argument) => null;
+        public string GetPbSurfaceText(long gridId, int x, int y, int z) => null;
         public string GetLcdContent(long gridId) => "";
     }
 }

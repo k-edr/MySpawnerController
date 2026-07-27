@@ -38,6 +38,20 @@ namespace GridSpawner.Plugin.Application
             }
             catch (Exception ex) { Logger.Warn($"GridDtoMapper velocity: {ex.Message}"); }
 
+            try
+            {
+                var forward = grid.WorldMatrix.Forward;
+                dto.Forward = new Vector3Dto { X = forward.X, Y = forward.Y, Z = forward.Z };
+            }
+            catch (Exception ex) { Logger.Warn($"GridDtoMapper forward: {ex.Message}"); }
+
+            try
+            {
+                var up = grid.WorldMatrix.Up;
+                dto.Up = new Vector3Dto { X = up.X, Y = up.Y, Z = up.Z };
+            }
+            catch (Exception ex) { Logger.Warn($"GridDtoMapper up: {ex.Message}"); }
+
             MapBlocks(grid, dto);
             return dto;
         }

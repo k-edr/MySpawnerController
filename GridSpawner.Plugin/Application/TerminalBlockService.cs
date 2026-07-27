@@ -639,7 +639,7 @@ internal static class TerminalBlockService
                     catch (Exception ex) { Logger.Warn($"RunScript echo: {ex.Message}"); }
 
                     Logger.Info($"RunScript: arg=\"{argument}\" ok={ok} echo={echo.Length} chars");
-                    return new ScriptRunResult { Echo = echo, Success = ok };
+                    return new ScriptRunResult { Echo = echo, Output = echo, Success = ok };
                 }
             }
 

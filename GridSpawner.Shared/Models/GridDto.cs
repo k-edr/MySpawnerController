@@ -17,6 +17,12 @@ public sealed class GridDto
     [JsonPropertyName("velocity")]
     public Vector3Dto Velocity { get; set; }
 
+    [JsonPropertyName("forward")]
+    public Vector3Dto Forward { get; set; }
+
+    [JsonPropertyName("up")]
+    public Vector3Dto Up { get; set; }
+
     [JsonPropertyName("blocks")]
     public List<BlockDto> Blocks { get; set; } = new();
 }
