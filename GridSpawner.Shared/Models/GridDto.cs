@@ -20,8 +20,20 @@ public sealed class GridDto
     [JsonPropertyName("forward")]
     public Vector3Dto Forward { get; set; }
 
+    [JsonPropertyName("backward")]
+    public Vector3Dto Backward { get; set; }
+
     [JsonPropertyName("up")]
     public Vector3Dto Up { get; set; }
+
+    [JsonPropertyName("down")]
+    public Vector3Dto Down { get; set; }
+
+    [JsonPropertyName("left")]
+    public Vector3Dto Left { get; set; }
+
+    [JsonPropertyName("right")]
+    public Vector3Dto Right { get; set; }
 
     [JsonPropertyName("blocks")]
     public List<BlockDto> Blocks { get; set; } = new();

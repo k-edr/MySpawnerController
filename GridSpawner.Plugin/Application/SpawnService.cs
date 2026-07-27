@@ -287,6 +287,26 @@ public sealed class SpawnService : ISpawnService, IDisposable
         return task.Result;
     }
 
+    public ScriptRunResult RunScriptLcd(long gridId, string argument)
+    {
+        using var task = new MainThreadTask<ScriptRunResult>();
+        long gid = gridId;
+        string arg = argument;
+        task.Process = () =>
+        {
+            if (!_tracker.TryGet(gid, out var grid))
+            {
+                task.Result = new ScriptRunResult { Echo = "", Success = false };
+                return;
+            }
+            task.Result = TerminalBlockService.RunScriptLcd(grid, arg);
+        };
+        _queue.Enqueue(task);
+        if (!task.Done.Wait(_timeout))
+            return new ScriptRunResult { Echo = "", Success = false };
+        return task.Result;
+    }
+
     public string GetLcdContent(long gridId)
     {
         using var task = new MainThreadTask<string>();

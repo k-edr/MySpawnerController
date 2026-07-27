@@ -9,6 +9,7 @@ namespace GridSpawner.Api.Infrastructure;
 /// Registers PB/LCD convenience endpoints for integration testing.
 ///   PUT  /api/v1/grids/{id}/script  — upload PB code
 ///   POST /api/v1/grids/{id}/run     — run PB with argument
+///   POST /api/v1/grids/{id}/runlcd  — run PB, wait 100 ms, read LCD surface
 ///   GET  /api/v1/grids/{id}/lcd     — read LCD content
 /// </summary>
 public static class PbTestHandler
@@ -42,6 +43,20 @@ public static class PbTestHandler
             var result = spawn.RunScript(gridId, arg);
             return result.Success
                 ? RouteResult.Ok(new { echo = result.Echo, success = true, argument = arg })
+                : RouteResult.NotFound("No programmable block found or run failed");
+        });
+
+        // POST /api/v1/grids/{id}/runlcd
+        router.Map<RunScriptRequest>(
+            "api/v1/grids/{id}/runlcd", "POST",
+            (m, body) =>
+        {
+            if (!long.TryParse(m.Groups["id"].Value, out long gridId))
+                return RouteResult.BadRequest("Invalid grid ID");
+            string arg = body?.Argument ?? "";
+            var result = spawn.RunScriptLcd(gridId, arg);
+            return result.Success
+                ? RouteResult.Ok(new { echo = result.Echo, output = result.Output, success = true, argument = arg })
                 : RouteResult.NotFound("No programmable block found or run failed");
         });
 

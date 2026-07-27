@@ -62,6 +62,9 @@ public interface ISpawnService
     /// <summary>Run the first PB on the grid with an argument. Returns echo output.</summary>
     ScriptRunResult RunScript(long gridId, string argument);
 
+    /// <summary>Run the first PB, wait 100 ms, then read its LCD surface text.</summary>
+    ScriptRunResult RunScriptLcd(long gridId, string argument);
+
     /// <summary>Read text content from the first LCD/TextPanel on the grid.</summary>
     string GetLcdContent(long gridId);
 

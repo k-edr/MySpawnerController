@@ -42,15 +42,25 @@ namespace GridSpawner.Plugin.Application
             {
                 var forward = grid.WorldMatrix.Forward;
                 dto.Forward = new Vector3Dto { X = forward.X, Y = forward.Y, Z = forward.Z };
+                dto.Backward = new Vector3Dto { X = -forward.X, Y = -forward.Y, Z = -forward.Z };
             }
-            catch (Exception ex) { Logger.Warn($"GridDtoMapper forward: {ex.Message}"); }
+            catch (Exception ex) { Logger.Warn($"GridDtoMapper forward/backward: {ex.Message}"); }
 
             try
             {
                 var up = grid.WorldMatrix.Up;
                 dto.Up = new Vector3Dto { X = up.X, Y = up.Y, Z = up.Z };
+                dto.Down = new Vector3Dto { X = -up.X, Y = -up.Y, Z = -up.Z };
             }
-            catch (Exception ex) { Logger.Warn($"GridDtoMapper up: {ex.Message}"); }
+            catch (Exception ex) { Logger.Warn($"GridDtoMapper up/down: {ex.Message}"); }
+
+            try
+            {
+                var right = grid.WorldMatrix.Right;
+                dto.Right = new Vector3Dto { X = right.X, Y = right.Y, Z = right.Z };
+                dto.Left = new Vector3Dto { X = -right.X, Y = -right.Y, Z = -right.Z };
+            }
+            catch (Exception ex) { Logger.Warn($"GridDtoMapper right/left: {ex.Message}"); }
 
             MapBlocks(grid, dto);
             return dto;

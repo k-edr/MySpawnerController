@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using GridSpawner.Plugin.Infrastructure;
 using GridSpawner.Shared.Models;
 using Sandbox.Game.Entities;
@@ -649,6 +650,48 @@ internal static class TerminalBlockService
         catch (Exception ex)
         {
             Logger.Error($"RunScript: {ex.Message}");
+            return new ScriptRunResult { Echo = "", Success = false };
+        }
+    }
+
+    public static ScriptRunResult RunScriptLcd(MyCubeGrid grid, string argument)
+    {
+        try
+        {
+            var blocks = new List<IMySlimBlock>();
+            ((IMyCubeGrid)grid).GetBlocks(blocks, null);
+
+            foreach (var slim in blocks)
+            {
+                if (slim?.FatBlock is Sandbox.ModAPI.Ingame.IMyProgrammableBlock pb)
+                {
+                    bool ok = pb.TryRun(argument ?? "");
+
+                    Thread.Sleep(100);
+
+                    string lcdText = "";
+                    try
+                    {
+                        if (pb is Sandbox.ModAPI.Ingame.IMyTextSurfaceProvider provider)
+                            lcdText = provider.GetSurface(0)?.GetText() ?? "";
+                    }
+                    catch (Exception ex) { Logger.Warn($"RunScriptLcd surface: {ex.Message}"); }
+
+                    string echo = "";
+                    try { echo = GetPbEcho(pb); }
+                    catch (Exception ex) { Logger.Warn($"RunScriptLcd echo: {ex.Message}"); }
+
+                    Logger.Info($"RunScriptLcd: arg=\"{argument}\" ok={ok} lcd={lcdText.Length} chars");
+                    return new ScriptRunResult { Echo = echo, Output = lcdText, Success = ok };
+                }
+            }
+
+            Logger.Warn("RunScriptLcd: no programmable block found on grid");
+            return new ScriptRunResult { Echo = "", Success = false };
+        }
+        catch (Exception ex)
+        {
+            Logger.Error($"RunScriptLcd: {ex.Message}");
             return new ScriptRunResult { Echo = "", Success = false };
         }
     }
